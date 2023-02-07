@@ -15,13 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\.gitignore">
+    <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
-    </None>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <None Include="..\.gitignore">
       <Filter>Файлы ресурсов</Filter>
-    </ClCompile>
+    </None>
+    <None Include="shaders\compile.bat">
+      <Filter>Файлы ресурсов</Filter>
+    </None>
+    <None Include="shaders\shader.frag">
+      <Filter>Файлы ресурсов</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
+      <Filter>Файлы ресурсов</Filter>
+    </None>
   </ItemGroup>
 </Project>
