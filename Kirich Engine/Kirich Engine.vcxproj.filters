@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Файлы ресурсов\Shaders">
+      <UniqueIdentifier>{32603962-3584-4268-868a-f0ee1d3a0844}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы ресурсов\Textures">
+      <UniqueIdentifier>{fd1cb66a-5950-43fa-b621-7afc614f6f7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы ресурсов\Models">
+      <UniqueIdentifier>{6283f98c-d723-4d54-b708-ab2afce59597}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -24,13 +33,26 @@
       <Filter>Файлы ресурсов</Filter>
     </None>
     <None Include="shaders\compile.bat">
-      <Filter>Файлы ресурсов</Filter>
+      <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
     <None Include="shaders\shader.frag">
-      <Filter>Файлы ресурсов</Filter>
+      <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
     <None Include="shaders\shader.vert">
-      <Filter>Файлы ресурсов</Filter>
+      <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\viking_room.png">
+      <Filter>Файлы ресурсов\Textures</Filter>
+    </Image>
+    <Image Include="textures\texture.jpg">
+      <Filter>Файлы ресурсов\Textures</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="models\viking_room.obj">
+      <Filter>Файлы ресурсов\Models</Filter>
+    </Object>
   </ItemGroup>
 </Project>
