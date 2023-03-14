@@ -27,6 +27,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="mainSave.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
@@ -39,6 +42,9 @@
       <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
     <None Include="shaders\shader.vert">
+      <Filter>Файлы ресурсов\Shaders</Filter>
+    </None>
+    <None Include="shaders\shader.comp">
       <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
   </ItemGroup>

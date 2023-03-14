@@ -140,11 +140,13 @@
   <ItemGroup>
     <None Include="..\.gitignore" />
     <None Include="shaders\compile.bat" />
+    <None Include="shaders\shader.comp" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mainSave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\texture.jpg" />
