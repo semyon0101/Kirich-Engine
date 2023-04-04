@@ -69,8 +69,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 struct Particle {
-	glm::vec2 position;
-	glm::vec2 velocity;
+	glm::vec3 position;
+	glm::vec3 velocity;
 	glm::vec4 color;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
@@ -87,7 +87,7 @@ struct Particle {
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Particle, position);
 
 		attributeDescriptions[1].binding = 0;
@@ -115,7 +115,10 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-	float deltaTime = 1.0f;
+	alignas(4) float deltaTime = 1.0f;
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
 };
 
 class App {
@@ -476,8 +479,6 @@ private:
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-		deviceFeatures.sampleRateShading = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -725,7 +726,7 @@ private:
 		layoutBindings[0].descriptorCount = 1;
 		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].pImmutableSamplers = nullptr;
-		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT| VK_SHADER_STAGE_VERTEX_BIT;
 
 		layoutBindings[1].binding = 1;
 		layoutBindings[1].descriptorCount = 1;
@@ -962,11 +963,12 @@ private:
 	void createDepthResources() {
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+
 	}
 
-	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels,  VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -979,7 +981,7 @@ private:
 		imageInfo.tiling = tiling;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = usage;
-		imageInfo.samples = numSamples;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
@@ -1020,8 +1022,8 @@ private:
 
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkImageView, 2> attachments = {
-				depthImageView,
-				swapChainImageViews[i]
+				swapChainImageViews[i],
+				depthImageView
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -1046,6 +1048,13 @@ private:
 
 		std::vector<Particle> particles(PARTICLE_COUNT);
 		for (auto& particle : particles) {
+
+			particle.position = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
+			particle.velocity = glm::vec3(0);//glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine)) * 0.00025f;
+			particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
+		}
+
+		/*for (auto& particle : particles) {
 			float r = 0.25f * sqrt(rndDist(rndEngine));
 			float theta = rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
 			float x = r * cos(theta) * HEIGHT / WIDTH;
@@ -1053,7 +1062,7 @@ private:
 			particle.position = glm::vec2(x, y);
 			particle.velocity = glm::normalize(glm::vec2(x, y)) * 0.00025f;
 			particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
-		}
+		}*/
 		/*std::default_random_engine rndEngine((unsigned)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(-1.0f, 1.0f);
 
@@ -1404,8 +1413,17 @@ private:
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
 		UniformBufferObject ubo{};
 		ubo.deltaTime = lastFrameTime * 2.0f;
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
@@ -1565,6 +1583,7 @@ private:
 };
 
 int main() {
+	system("shaders\\compile.bat");
 	App app;
 
 	try {
