@@ -35,7 +35,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLE_COUNT = std::pow(2, 10);
+const uint32_t PARTICLE_COUNT = 2;// std::pow(2, 10);
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -69,9 +69,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 struct Particle {
-	glm::vec3 position;
-	glm::vec3 velocity;
-	glm::vec4 color;
+	alignas(16) glm::vec3 position;
+	alignas(16) glm::vec3 velocity;
+	alignas(16) glm::vec4 color;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
@@ -726,7 +726,7 @@ private:
 		layoutBindings[0].descriptorCount = 1;
 		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].pImmutableSamplers = nullptr;
-		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT| VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
 		layoutBindings[1].binding = 1;
 		layoutBindings[1].descriptorCount = 1;
@@ -825,6 +825,7 @@ private:
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
 
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -968,7 +969,7 @@ private:
 
 	}
 
-	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels,  VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1016,7 +1017,7 @@ private:
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
 
-	
+
 	void createFramebuffers() {
 		swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -1044,15 +1045,22 @@ private:
 
 	void createShaderStorageBuffers() {
 		std::default_random_engine rndEngine((unsigned)time(nullptr));
-		std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
+		std::uniform_real_distribution<float> rndDist(-1.0f, 1.0f);
 
 		std::vector<Particle> particles(PARTICLE_COUNT);
-		for (auto& particle : particles) {
+		particles[0].position = glm::vec3(1,0,0);
+		particles[1].position = glm::vec3(0);
+
+		particles[0].velocity = glm::vec3(0);
+		particles[0].color = glm::vec4(1);
+		particles[1].velocity = glm::vec3(0);
+		particles[1].color = glm::vec4(1,0,0,1);
+		/*for (auto& particle : particles) {
 
 			particle.position = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
-			particle.velocity = glm::vec3(0);//glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine)) * 0.00025f;
-			particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
-		}
+			particle.velocity = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine)) * 0.00025f;
+			particle.color = glm::vec4(rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine) / 2 + 0.5, 1.0f);
+		}*/
 
 		/*for (auto& particle : particles) {
 			float r = 0.25f * sqrt(rndDist(rndEngine));
@@ -1420,7 +1428,7 @@ private:
 
 		UniformBufferObject ubo{};
 		ubo.deltaTime = lastFrameTime * 2.0f;
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
@@ -1568,7 +1576,7 @@ private:
 
 		glfwTerminate();
 	}
-	
+
 	void cleanupSwapChain() {
 		for (auto framebuffer : swapChainFramebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
