@@ -148,8 +148,8 @@ private:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	VkRenderPass renderPass;
-	VkPipelineLayout graphicsPipelineLayout;
-	VkPipeline graphicsPipeline;
+	VkPipelineLayout graphicsPipelineLayout1;
+	VkPipeline graphicsPipeline1;
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout computePipelineLayout;
@@ -315,7 +315,7 @@ private:
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline1);
 
 			VkViewport viewport{};
 			viewport.x = 0.0f;
@@ -625,7 +625,7 @@ private:
 		createImageViews();
 		createRenderPass();
 		createDescriptorSetLayout();
-		createGraphicsPipeline();
+		createGraphicsPipeline1();
 		createComputePipeline();
 		createFramebuffers();
 		createCommandPool();
@@ -952,7 +952,7 @@ private:
 		}
 	}
 
-	void createGraphicsPipeline() {
+	void createGraphicsPipeline1() {
 		auto vertShaderCode = readFile("shaders/vert.spv");
 		auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -1044,7 +1044,7 @@ private:
 		pipelineLayoutInfo.setLayoutCount = 0;
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout1) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
@@ -1059,12 +1059,12 @@ private:
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = graphicsPipelineLayout;
+		pipelineInfo.layout = graphicsPipelineLayout1;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline1) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
@@ -1369,8 +1369,8 @@ private:
 	void cleanup() {
 		cleanupSwapChain();
 
-		vkDestroyPipeline(device, graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(device, graphicsPipelineLayout, nullptr);
+		vkDestroyPipeline(device, graphicsPipeline1, nullptr);
+		vkDestroyPipelineLayout(device, graphicsPipelineLayout1, nullptr);
 
 		vkDestroyPipeline(device, computePipeline, nullptr);
 		vkDestroyPipelineLayout(device, computePipelineLayout, nullptr);

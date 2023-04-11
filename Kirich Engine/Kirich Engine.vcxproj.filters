@@ -61,6 +61,9 @@
     <Image Include="textures\texture.jpg">
       <Filter>Файлы ресурсов\Textures</Filter>
     </Image>
+    <Image Include="mainSave4.cpp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Object Include="models\viking_room.obj">
