@@ -53,6 +53,12 @@
     <None Include="shaders\shader.comp">
       <Filter>Файлы ресурсов\Shaders</Filter>
     </None>
+    <None Include="shaders\shader1.frag">
+      <Filter>Файлы ресурсов\Shaders</Filter>
+    </None>
+    <None Include="shaders\shader1.vert">
+      <Filter>Файлы ресурсов\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\viking_room.png">

@@ -708,6 +708,17 @@ private:
 		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}*/
+
+		VkAttachmentDescription colorAttachmentSP2{};
+		colorAttachmentSP2.format = swapChainImageFormat;
+		colorAttachmentSP2.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentSP2.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachmentSP2.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentSP2.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentSP2.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentSP2.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentSP2.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
 		VkAttachmentDescription colorAttachmentSP1{};
 		colorAttachmentSP1.format = swapChainImageFormat;
 		colorAttachmentSP1.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -728,35 +739,25 @@ private:
 		depthAttachmentSP1.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachmentSP1.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentDescription colorAttachmentSP2{};
-		colorAttachmentSP2.format = swapChainImageFormat;
-		colorAttachmentSP2.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachmentSP2.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachmentSP2.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachmentSP2.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentSP2.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachmentSP2.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachmentSP2.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		VkAttachmentReference colorAttachmentRefSP2{};
+		colorAttachmentRefSP2.attachment = 0;
+		colorAttachmentRefSP2.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference colorAttachmentRefSP1{};
-		colorAttachmentRefSP1.attachment = 0;
+		colorAttachmentRefSP1.attachment = 1;
 		colorAttachmentRefSP1.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference depthAttachmentRefSP1{};
-		depthAttachmentRefSP1.attachment = 1;
+		depthAttachmentRefSP1.attachment = 2;
 		depthAttachmentRefSP1.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference colorAttachmentRefSP2{};
-		colorAttachmentRefSP2.attachment = 2;
-		colorAttachmentRefSP2.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
 		VkAttachmentReference inputColorAttachmentRefSP2{};
-		colorAttachmentRefSP1.attachment = 0;
-		colorAttachmentRefSP1.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		inputColorAttachmentRefSP2.attachment = 1;
+		inputColorAttachmentRefSP2.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkAttachmentReference inputDepthAttachmentRefSP2{};
-		depthAttachmentRefSP1.attachment = 1;
-		depthAttachmentRefSP1.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		inputDepthAttachmentRefSP2.attachment = 2;
+		inputDepthAttachmentRefSP2.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkSubpassDescription subpass1{};
 		subpass1.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -797,7 +798,7 @@ private:
 		dependency3.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependency3.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
-		std::array<VkAttachmentDescription, 3> attachments = { colorAttachmentSP1, depthAttachmentSP1, colorAttachmentSP2 };
+		std::array<VkAttachmentDescription, 3> attachments = { colorAttachmentSP2, colorAttachmentSP1, depthAttachmentSP1 };
 
 		std::array<VkSubpassDescription, 2> subpasses = { subpass1, subpass2 };
 
@@ -1062,8 +1063,9 @@ private:
 
 
 	void createGraphicsPipeline2() {
-		auto vertShaderCode = readFile("shaders/vert.spv");
-		auto fragShaderCode = readFile("shaders/frag.spv");
+
+		auto vertShaderCode = readFile("shaders/vert1.spv");
+		auto fragShaderCode = readFile("shaders/frag1.spv");
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1091,7 +1093,7 @@ private:
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 		VkPipelineViewportStateCreateInfo viewportState{};
@@ -1172,7 +1174,7 @@ private:
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = graphicsPipelineLayout2;
 		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.subpass = 0;
+		pipelineInfo.subpass = 1;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline2) != VK_SUCCESS) {
@@ -1239,13 +1241,17 @@ private:
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			VkFormat colorFormat = swapChainImageFormat;
 
-			createImage(swapChainExtent.width, swapChainExtent.height, 1, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImagesOP1[i], colorImageMemorisOP1[i]);
-			colorImageViewsOP1[i] = createImageView(colorImagesOP1[i], colorFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+			createImage(swapChainExtent.width, swapChainExtent.height, 1, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				colorImagesOP1[i], colorImageMemorisOP1[i]);
+			colorImageViewsOP1[i] = createImageView(colorImagesOP1[i], colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
-		
+
 	}
 
-	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1284,11 +1290,12 @@ private:
 	void createDepthResources() {
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
 	}
-	
+
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1308,9 +1315,9 @@ private:
 
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkImageView, 3> attachments = {
+				swapChainImageViews[i],
 				colorImageViewsOP1[i],
-				depthImageView,
-				swapChainImageViews[i]
+				depthImageView
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -1498,18 +1505,17 @@ private:
 	void createInputDescriptorPool() {
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(colorImageViewsOP1.size());
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[0].descriptorCount = 1;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		poolSizes[1].descriptorCount = 1;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &inputDescriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 	}
@@ -1591,44 +1597,31 @@ private:
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-			VkDescriptorBufferInfo colorImageInfo{};
-			colorImageInfo.buffer = uniformBuffers[i];
-			colorImageInfo.offset = 0;
-			colorImageInfo.range = sizeof(UniformBufferObject);
+			VkDescriptorImageInfo colorImageInfo{};
+			colorImageInfo.sampler = {};
+			colorImageInfo.imageView = colorImageViewsOP1[i];
+			colorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
+			descriptorWrites[0].dstSet = inputDescriptorSets[i];
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
+			descriptorWrites[0].pImageInfo = &colorImageInfo;
 
-			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
-			storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
-			storageBufferInfoLastFrame.offset = 0;
-			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+			VkDescriptorImageInfo depthImageInfo{};
+			depthImageInfo.sampler = {};
+			depthImageInfo.imageView = depthImageView;
+			depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[i];
+			descriptorWrites[1].dstSet = inputDescriptorSets[i];
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &storageBufferInfoLastFrame;
-
-			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
-			storageBufferInfoCurrentFrame.buffer = shaderStorageBuffers[i];
-			storageBufferInfoCurrentFrame.offset = 0;
-			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
-
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = descriptorSets[i];
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pBufferInfo = &storageBufferInfoCurrentFrame;
+			descriptorWrites[1].pImageInfo = &depthImageInfo;
 
 			vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
@@ -1840,6 +1833,7 @@ private:
 	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -1854,9 +1848,10 @@ private:
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
-		std::array<VkClearValue, 2> clearValues{};
+		std::array<VkClearValue, 3> clearValues{};
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		clearValues[1].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clearValues[2].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
@@ -1885,6 +1880,15 @@ private:
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
 
 			vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
+
+
+			vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline2);
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout2, 0, 1, &inputDescriptorSets[currentFrame], 0, nullptr);
+
+			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 

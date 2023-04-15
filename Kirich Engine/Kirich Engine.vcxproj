@@ -151,6 +151,8 @@
     <None Include="shaders\shader.comp" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
+    <None Include="shaders\shader1.frag" />
+    <None Include="shaders\shader1.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
