@@ -8,9 +8,9 @@ void main() {
     
     vec2 coord = gl_PointCoord - vec2(0.5);
     if (coord.x>0){
-    outColor = vec4(fragColor, 1);//0.5 - length(coord));
+        outColor = vec4(fragColor, 1);//0.5 - length(coord));
     }else {
-    outColor = vec4(fragColor, (0.5+coord.x)*2);
+        outColor = vec4(fragColor, (0.5+coord.x)*2);
     }
 
 }
