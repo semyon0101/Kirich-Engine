@@ -160,9 +160,9 @@ private:
 
 	VkCommandPool commandPool;
 
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
+	VkImage depthImageP1;
+	VkDeviceMemory depthImageMemoryP1;
+	VkImageView depthImageViewP1;
 
 	std::vector<VkBuffer> shaderStorageBuffers;
 	std::vector<VkDeviceMemory> shaderStorageBuffersMemory;
@@ -752,8 +752,8 @@ private:
 
 
 	void createGraphicsPipeline1() {
-		auto vertShaderCode = readFile("shaders/vert.spv");
-		auto fragShaderCode = readFile("shaders/frag.spv");
+		auto vertShaderCode = readFile("shaders/vertP2.spv");
+		auto fragShaderCode = readFile("shaders/fragP2.spv");
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -964,8 +964,8 @@ private:
 	void createDepthResources() {
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImageP1, depthImageMemoryP1);
+		depthImageViewP1 = createImageView(depthImageP1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
 	}
 
@@ -1024,7 +1024,7 @@ private:
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkImageView, 2> attachments = {
 				swapChainImageViews[i],
-				depthImageView
+				depthImageViewP1
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};

@@ -149,13 +149,18 @@
     <None Include="..\.gitignore" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\shader.comp" />
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
-    <None Include="shaders\shader1.frag" />
-    <None Include="shaders\shader1.vert" />
+    <None Include="shaders\shaderP1.frag" />
+    <None Include="shaders\shaderP1.vert" />
+    <None Include="shaders\shaderP2.frag" />
+    <None Include="shaders\shaderP2.vert" />
+    <None Include="shaders\shaderP3.frag" />
+    <None Include="shaders\shaderP3.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="mainSave.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
