@@ -769,19 +769,20 @@ private:
 
 		VkSubpassDescription subpass2{};
 		subpass2.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass2.inputAttachmentCount = static_cast<uint32_t>(inputAttachmentRefsP2.size());
-		subpass2.pInputAttachments = inputAttachmentRefsP2.data();
 		subpass2.colorAttachmentCount = 1;
 		subpass2.pColorAttachments = &colorAttachmentRefP2;
+		subpass2.pDepthStencilAttachment = &depthAttachmentRefP2;
+		subpass2.pInputAttachments = inputAttachmentRefsP2.data();
+		subpass2.inputAttachmentCount = static_cast<uint32_t>(inputAttachmentRefsP2.size());
 
 		std::array<VkAttachmentReference, 4> inputAttachmentRefsP3 = { inputColorAttachmentRefP1 , inputDepthAttachmentRefP1, inputColorAttachmentRefP2, inputDepthAttachmentRefP2 };
-
+		
 		VkSubpassDescription subpass3{};
 		subpass3.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass3.inputAttachmentCount = static_cast<uint32_t>(inputAttachmentRefsP3.size());
-		subpass3.pInputAttachments = inputAttachmentRefsP3.data();
 		subpass3.colorAttachmentCount = 1;
 		subpass3.pColorAttachments = &colorAttachmentRefP3;
+		subpass3.pInputAttachments = inputAttachmentRefsP3.data();
+		subpass3.inputAttachmentCount = static_cast<uint32_t>(inputAttachmentRefsP3.size());
 
 		VkSubpassDependency dependency1{};
 		dependency1.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -1693,6 +1694,8 @@ private:
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
 		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &inputDescriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
@@ -1974,9 +1977,10 @@ private:
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+			///vkWaitForFences(device, 1, inFlightFences.data(), VK_TRUE, UINT64_MAX); -------------------------------------- max frames in flight =1 --- no problem
 			framebufferResized = false;
 			recreateSwapChain();
-			printf("123");
+			recreateDescriptionSets();
 		}
 		else if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to present swap chain image!");
@@ -2018,24 +2022,6 @@ private:
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
 		}
-
-	}
-
-	void recreateSwapChain() {
-		int width = 0, height = 0;
-		glfwGetFramebufferSize(window, &width, &height);
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(window, &width, &height);
-			glfwWaitEvents();
-		}
-
-		vkDeviceWaitIdle(device);
-
-		cleanupSwapChain();
-
-		createSwapChain();
-		createImageViews();
-		createFramebuffers();
 	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -2066,10 +2052,6 @@ private:
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline1);
-
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout1, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
 			VkViewport viewport{};
 			viewport.x = 0.0f;
 			viewport.y = 0.0f;
@@ -2084,6 +2066,11 @@ private:
 			scissor.extent = swapChainExtent;
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline1);
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout1, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 
@@ -2092,8 +2079,7 @@ private:
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline2);
 
 			std::array<VkDescriptorSet, 2> dSets = { descriptorSets[currentFrame], inputDescriptorSets[currentFrame]};
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout2, 0, static_cast<uint32_t>(dSets.size()),
-				dSets.data(), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout2, 0, static_cast<uint32_t>(dSets.size()), dSets.data(), 0, nullptr);
 
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
@@ -2114,6 +2100,32 @@ private:
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
+	}
+
+	void recreateSwapChain() {
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window, &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(device);
+
+		cleanupSwapChain();
+
+		createSwapChain();
+		createImageViews();
+		createColorResources();
+		createDepthResources();
+		createFramebuffers();
+	}
+
+	void recreateDescriptionSets() {
+
+		vkFreeDescriptorSets(device, inputDescriptorPool, static_cast<uint32_t>(inputDescriptorSets.size()), inputDescriptorSets.data());
+		createInputDescriptorSets();
+
 	}
 
 
@@ -2167,6 +2179,25 @@ private:
 	}
 
 	void cleanupSwapChain() {
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroyImageView(device, colorImageViewsP1[i], nullptr);
+			vkDestroyImage(device, colorImagesP1[i], nullptr);
+			vkFreeMemory(device, colorImageMemorisP1[i], nullptr);
+
+			vkDestroyImageView(device, colorImageViewsP2[i], nullptr);
+			vkDestroyImage(device, colorImagesP2[i], nullptr);
+			vkFreeMemory(device, colorImageMemorisP2[i], nullptr);
+		}
+
+		vkDestroyImageView(device, depthImageViewP1, nullptr);
+		vkDestroyImage(device, depthImageP1, nullptr);
+		vkFreeMemory(device, depthImageMemoryP1, nullptr);
+
+		vkDestroyImageView(device, depthImageViewP2, nullptr);
+		vkDestroyImage(device, depthImageP2, nullptr);
+		vkFreeMemory(device, depthImageMemoryP2, nullptr);
+
 		for (auto framebuffer : swapChainFramebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 		}
