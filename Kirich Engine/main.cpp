@@ -636,6 +636,8 @@ private:
 
 
 	void createImageViews() {
+		/*std::cout << swapChainImages.size();
+		std::cout << MAX_FRAMES_IN_FLIGHT << std::endl;*/
 		swapChainImageViews.resize(swapChainImages.size());
 
 		for (uint32_t i = 0; i < swapChainImages.size(); i++) {
@@ -1907,6 +1909,16 @@ private:
 	}
 
 	void drawFrame() {
+
+
+		/*vkWaitForFences(device, 2, inFlightFences.data(), VK_TRUE, UINT64_MAX);
+
+		recreateSwapChain();
+		recreateDescriptionSets();
+		
+		vkWaitForFences(device, 2, inFlightFences.data(), VK_TRUE, UINT64_MAX);*/
+
+
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 		updateUniformBuffer(currentFrame);
@@ -1928,6 +1940,7 @@ private:
 		};
 
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		
 
 		uint32_t imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1961,23 +1974,32 @@ private:
 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
+		printf("2");
+		
+		VkSwapchainKHR swapChains[] = { swapChain };
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
-
-		VkSwapchainKHR swapChains[] = { swapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = &imageIndex;
 
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
+		for (size_t i = 0; i < 50000000; i++)
+		{
+			int b = 0;
+			b = i * 2 / 3 * 3;
+		}
+
+
+		printf("1");
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-			///vkWaitForFences(device, 1, inFlightFences.data(), VK_TRUE, UINT64_MAX); -------------------------------------- max frames in flight =1 --- no problem
+			std::cout<< std::endl << currentFrame << std::endl;
+			///vkWaitForFences(device, inFlightFences.size(), inFlightFences.data(), VK_TRUE, UINT64_MAX); -------------------------------------- max frames in flight =1 --- no problem
+			//currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
 			framebufferResized = false;
 			recreateSwapChain();
 			recreateDescriptionSets();
@@ -1987,6 +2009,7 @@ private:
 		}
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -2179,7 +2202,7 @@ private:
 	}
 
 	void cleanupSwapChain() {
-		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		for (int i = 0; i < swapChainImageViews.size(); i++)
 		{
 			vkDestroyImageView(device, colorImageViewsP1[i], nullptr);
 			vkDestroyImage(device, colorImagesP1[i], nullptr);
