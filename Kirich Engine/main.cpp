@@ -1974,7 +1974,6 @@ private:
 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
-		printf("2");
 		
 		VkSwapchainKHR swapChains[] = { swapChain };
 
@@ -1988,18 +1987,8 @@ private:
 
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-		for (size_t i = 0; i < 50000000; i++)
-		{
-			int b = 0;
-			b = i * 2 / 3 * 3;
-		}
-
-
-		printf("1");
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-			std::cout<< std::endl << currentFrame << std::endl;
-			///vkWaitForFences(device, inFlightFences.size(), inFlightFences.data(), VK_TRUE, UINT64_MAX); -------------------------------------- max frames in flight =1 --- no problem
-			//currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
+			currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
 			framebufferResized = false;
 			recreateSwapChain();
 			recreateDescriptionSets();
@@ -2158,6 +2147,12 @@ private:
 		vkDestroyPipeline(device, graphicsPipeline1, nullptr);
 		vkDestroyPipelineLayout(device, graphicsPipelineLayout1, nullptr);
 
+		vkDestroyPipeline(device, graphicsPipeline2, nullptr);
+		vkDestroyPipelineLayout(device, graphicsPipelineLayout2, nullptr);
+
+		vkDestroyPipeline(device, graphicsPipeline3, nullptr);
+		vkDestroyPipelineLayout(device, graphicsPipelineLayout3, nullptr);
+
 		vkDestroyPipeline(device, computePipeline, nullptr);
 		vkDestroyPipelineLayout(device, computePipelineLayout, nullptr);
 
@@ -2169,8 +2164,10 @@ private:
 		}
 
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
 		vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
+		vkDestroyDescriptorPool(device, inputDescriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(device, inputDescriptorSetLayout, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(device, shaderStorageBuffers[i], nullptr);
