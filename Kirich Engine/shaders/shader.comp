@@ -8,6 +8,9 @@ struct Particle {
 
 layout (binding = 0) uniform ParameterUBO {
     float deltaTime;
+    mat4 model;
+    mat4 view;
+    mat4 proj;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
@@ -23,11 +26,8 @@ layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 void main() 
 {
 	uint index = gl_GlobalInvocationID.x;  
-
-	Particle particleIn = particlesIn[index];
-
-	particlesOut[index].position = particleIn.position + particleIn.velocity * ubo.deltaTime;
-	particlesOut[index].velocity = particleIn.velocity;
+	particlesOut[index].position = particlesIn[index].position + particlesIn[index].velocity * ubo.deltaTime;
+	particlesOut[index].velocity = particlesIn[index].velocity;
 
 	if ((particlesOut[index].position.x <= -1.0) || (particlesOut[index].position.x >= 1.0)) {
 	    particlesOut[index].velocity.x = -particlesOut[index].velocity.x;
@@ -38,19 +38,4 @@ void main()
 	if ((particlesOut[index].position.z <= -1.0) || (particlesOut[index].position.z >= 1.0)) {
 	    particlesOut[index].velocity.z = -particlesOut[index].velocity.z;
 	}
-
-//    uint index = gl_GlobalInvocationID.x;  
-//
-//    Particle particleIn = particlesIn[index];
-//
-//    particlesOut[index].position = particleIn.position + particleIn.velocity.xyz * ubo.deltaTime;
-//    particlesOut[index].velocity = particleIn.velocity;
-//
-//    if ((particlesOut[index].position.x <= -1.0) || (particlesOut[index].position.x >= 1.0)) {
-//        particlesOut[index].velocity.x = -particlesOut[index].velocity.x;
-//    }
-//    if ((particlesOut[index].position.y <= -1.0) || (particlesOut[index].position.y >= 1.0)) {
-//        particlesOut[index].velocity.y = -particlesOut[index].velocity.y;
-//    }
-
 }

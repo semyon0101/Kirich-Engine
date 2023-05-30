@@ -35,7 +35,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLE_COUNT = 2;// std::pow(2, 10);
+const uint32_t PARTICLE_COUNT = std::pow(2, 5);
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -51,7 +51,8 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, 
+	VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -170,17 +171,17 @@ private:
 	std::vector <VkDeviceMemory> colorImageMemorisP1;
 	std::vector<VkImageView> colorImageViewsP1;
 
-	VkImage depthImageP1;
-	VkDeviceMemory depthImageMemoryP1;
-	VkImageView depthImageViewP1;
+	std::vector<VkImage> depthImagesP1;
+	std::vector <VkDeviceMemory> depthImageMemorisP1;
+	std::vector<VkImageView> depthImageViewsP1;
 
 	std::vector<VkImage> colorImagesP2;
 	std::vector <VkDeviceMemory> colorImageMemorisP2;
 	std::vector<VkImageView> colorImageViewsP2;
 
-	VkImage depthImageP2;
-	VkDeviceMemory depthImageMemoryP2;
-	VkImageView depthImageViewP2;
+	std::vector<VkImage> depthImagesP2;
+	std::vector <VkDeviceMemory> depthImageMemorisP2;
+	std::vector<VkImageView> depthImageViewsP2;
 
 	std::vector<VkBuffer> shaderStorageBuffers;
 	std::vector<VkDeviceMemory> shaderStorageBuffersMemory;
@@ -350,7 +351,8 @@ private:
 		createInfo.pfnUserCallback = debugCallback;
 	}
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, 
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
@@ -636,8 +638,6 @@ private:
 
 
 	void createImageViews() {
-		/*std::cout << swapChainImages.size();
-		std::cout << MAX_FRAMES_IN_FLIGHT << std::endl;*/
 		swapChainImageViews.resize(swapChainImages.size());
 
 		for (uint32_t i = 0; i < swapChainImages.size(); i++) {
@@ -681,11 +681,11 @@ private:
 		depthAttachmentP1.format = findDepthFormat();
 		depthAttachmentP1.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachmentP1.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachmentP1.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachmentP1.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		depthAttachmentP1.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachmentP1.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachmentP1.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachmentP1.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentP1.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; 
 
 
 		VkAttachmentDescription colorAttachmentP2{};
@@ -702,11 +702,11 @@ private:
 		depthAttachmentP2.format = findDepthFormat();
 		depthAttachmentP2.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachmentP2.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachmentP2.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachmentP2.storeOp = VK_ATTACHMENT_STORE_OP_STORE; 
 		depthAttachmentP2.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachmentP2.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachmentP2.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachmentP2.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentP2.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; 
 
 
 		VkAttachmentDescription colorAttachmentP3{};
@@ -1402,9 +1402,9 @@ private:
 		colorImageMemorisP2.resize(swapChainImageViews.size());
 		colorImageViewsP2.resize(swapChainImageViews.size());
 
-		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			VkFormat colorFormat = swapChainImageFormat;
+		VkFormat colorFormat = swapChainImageFormat;
 
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			createImage(swapChainExtent.width, swapChainExtent.height, 1, colorFormat, VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				colorImagesP1[i], colorImageMemorisP1[i]);
@@ -1415,12 +1415,11 @@ private:
 				colorImagesP2[i], colorImageMemorisP2[i]);
 			colorImageViewsP2[i] = createImageView(colorImagesP2[i], colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
-
 	}
 
 	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-
+			
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1457,16 +1456,26 @@ private:
 
 
 	void createDepthResources() {
+		depthImagesP1.resize(swapChainImageViews.size());
+		depthImageMemorisP1.resize(swapChainImageViews.size());
+		depthImageViewsP1.resize(swapChainImageViews.size());
+		depthImagesP2.resize(swapChainImageViews.size());
+		depthImageMemorisP2.resize(swapChainImageViews.size());
+		depthImageViewsP2.resize(swapChainImageViews.size());
+
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImageP1, depthImageMemoryP1);
-		depthImageViewP1 = createImageView(depthImageP1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				depthImagesP1[i], depthImageMemorisP1[i]);
+			depthImageViewsP1[i] = createImageView(depthImagesP1[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImageP2, depthImageMemoryP2);
-		depthImageViewP2 = createImageView(depthImageP2, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
+			createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				depthImagesP2[i], depthImageMemorisP2[i]);
+			depthImageViewsP2[i] = createImageView(depthImagesP2[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		}
 	}
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -1489,9 +1498,9 @@ private:
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkImageView, 5> attachments = {
 				colorImageViewsP1[i],
-				depthImageViewP1,
+				depthImageViewsP1[i],
 				colorImageViewsP2[i],
-				depthImageViewP2,
+				depthImageViewsP2[i],
 				swapChainImageViews[i]
 			};
 
@@ -1516,19 +1525,20 @@ private:
 		std::uniform_real_distribution<float> rndDist(-1.0f, 1.0f);
 
 		std::vector<Particle> particles(PARTICLE_COUNT);
-		particles[0].position = glm::vec3(1, 0, 0);
-		particles[1].position = glm::vec3(0);
-
-		particles[0].velocity = glm::vec3(0);
-		particles[0].color = glm::vec4(1);
+		/*particles[0].velocity = glm::vec3(0);
 		particles[1].velocity = glm::vec3(0);
-		particles[1].color = glm::vec4(1, 0, 0, 1);
-		/*for (auto& particle : particles) {
+
+		particles[0].position = glm::vec3(1, 0, 0);
+		particles[0].color = glm::vec4(1);
+				  
+		particles[1].position = glm::vec3(0);
+		particles[1].color = glm::vec4(1, 0, 0, 1);*/
+		for (auto& particle : particles) {
 
 			particle.position = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
 			particle.velocity = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine)) * 0.00025f;
 			particle.color = glm::vec4(rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine) / 2 + 0.5, 1.0f);
-		}*/
+		}
 
 		/*for (auto& particle : particles) {
 			float r = 0.25f * sqrt(rndDist(rndEngine));
@@ -1680,22 +1690,22 @@ private:
 	void createInputDescriptorPool() {
 		std::array<VkDescriptorPoolSize, 4> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImageViews.size());
 
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[1].descriptorCount = 1;
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImageViews.size());
 
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImageViews.size());
 
 		poolSizes[3].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[3].descriptorCount = 1;
+		poolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainImageViews.size());
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolInfo.maxSets = static_cast<uint32_t>(swapChainImageViews.size());
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &inputDescriptorPool) != VK_SUCCESS) {
@@ -1765,19 +1775,19 @@ private:
 
 
 	void createInputDescriptorSets() {
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, inputDescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(swapChainImageViews.size(), inputDescriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = inputDescriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImageViews.size());
 		allocInfo.pSetLayouts = layouts.data();
 
-		inputDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		inputDescriptorSets.resize(swapChainImageViews.size());
 		if (vkAllocateDescriptorSets(device, &allocInfo, inputDescriptorSets.data()) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate descriptor sets!");
 		}
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 
 			VkDescriptorImageInfo colorImageInfoP1{};
@@ -1795,7 +1805,7 @@ private:
 
 			VkDescriptorImageInfo depthImageInfoP1{};
 			depthImageInfoP1.sampler = {};
-			depthImageInfoP1.imageView = depthImageViewP1;
+			depthImageInfoP1.imageView = depthImageViewsP1[i];
 			depthImageInfoP1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1821,7 +1831,7 @@ private:
 
 			VkDescriptorImageInfo depthImageInfoP2{};
 			depthImageInfoP2.sampler = {};
-			depthImageInfoP2.imageView = depthImageViewP2;
+			depthImageInfoP2.imageView = depthImageViewsP2[i];
 			depthImageInfoP2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1909,16 +1919,6 @@ private:
 	}
 
 	void drawFrame() {
-
-
-		/*vkWaitForFences(device, 2, inFlightFences.data(), VK_TRUE, UINT64_MAX);
-
-		recreateSwapChain();
-		recreateDescriptionSets();
-		
-		vkWaitForFences(device, 2, inFlightFences.data(), VK_TRUE, UINT64_MAX);*/
-
-
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 		updateUniformBuffer(currentFrame);
@@ -1988,7 +1988,6 @@ private:
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-			currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
 			framebufferResized = false;
 			recreateSwapChain();
 			recreateDescriptionSets();
@@ -1998,7 +1997,6 @@ private:
 		}
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -2008,8 +2006,8 @@ private:
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.deltaTime = lastFrameTime * 2.0f;
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.deltaTime = lastFrameTime / 2.0f;
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
@@ -2090,7 +2088,7 @@ private:
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline2);
 
-			std::array<VkDescriptorSet, 2> dSets = { descriptorSets[currentFrame], inputDescriptorSets[currentFrame]};
+			std::array<VkDescriptorSet, 2> dSets = { descriptorSets[currentFrame], inputDescriptorSets[imageIndex]};
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout2, 0, static_cast<uint32_t>(dSets.size()), dSets.data(), 0, nullptr);
 
 			VkDeviceSize offsets[] = { 0 };
@@ -2103,7 +2101,7 @@ private:
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline3);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout3, 0, 1, &inputDescriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout3, 0, 1, &inputDescriptorSets[imageIndex], 0, nullptr);
 
 			vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		}
@@ -2208,15 +2206,17 @@ private:
 			vkDestroyImageView(device, colorImageViewsP2[i], nullptr);
 			vkDestroyImage(device, colorImagesP2[i], nullptr);
 			vkFreeMemory(device, colorImageMemorisP2[i], nullptr);
+		
+
+			vkDestroyImageView(device, depthImageViewsP1[i], nullptr);
+			vkDestroyImage(device, depthImagesP1[i], nullptr);
+			vkFreeMemory(device, depthImageMemorisP1[i], nullptr);
+
+			vkDestroyImageView(device, depthImageViewsP2[i], nullptr);
+			vkDestroyImage(device, depthImagesP2[i], nullptr);
+			vkFreeMemory(device, depthImageMemorisP2[i], nullptr);
 		}
 
-		vkDestroyImageView(device, depthImageViewP1, nullptr);
-		vkDestroyImage(device, depthImageP1, nullptr);
-		vkFreeMemory(device, depthImageMemoryP1, nullptr);
-
-		vkDestroyImageView(device, depthImageViewP2, nullptr);
-		vkDestroyImage(device, depthImageP2, nullptr);
-		vkFreeMemory(device, depthImageMemoryP2, nullptr);
 
 		for (auto framebuffer : swapChainFramebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);

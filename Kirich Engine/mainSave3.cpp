@@ -155,9 +155,9 @@ private:
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
 
-	VkImage depthImageP1;
-	VkDeviceMemory depthImageMemoryP1;
-	VkImageView depthImageViewP1;
+	VkImage depthImagesP1;
+	VkDeviceMemory depthImageMemorisP1;
+	VkImageView depthImageViewsP1;
 
 	std::vector<VkBuffer> shaderStorageBuffers;
 	std::vector<VkDeviceMemory> shaderStorageBuffersMemory;
@@ -1058,8 +1058,8 @@ private:
 	void createDepthResources() {
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImageP1, depthImageMemoryP1);
-		depthImageViewP1 = createImageView(depthImageP1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImagesP1, depthImageMemorisP1);
+		depthImageViewsP1 = createImageView(depthImagesP1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
 
@@ -1070,7 +1070,7 @@ private:
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 			std::array<VkImageView, 3> attachments = {
 				colorImageView,
-				depthImageViewP1,
+				depthImageViewsP1,
 				swapChainImageViews[i]
 			};
 
