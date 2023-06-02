@@ -35,7 +35,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLE_COUNT = std::pow(2, 5);
+const uint32_t PARTICLE_COUNT = std::pow(2, 8);
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -1161,9 +1161,9 @@ private:
 		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;//VK_BLEND_OP_ADD
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;// VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;//VK_BLEND_FACTOR_ONE
 
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -1527,12 +1527,16 @@ private:
 		std::vector<Particle> particles(PARTICLE_COUNT);
 		/*particles[0].velocity = glm::vec3(0);
 		particles[1].velocity = glm::vec3(0);
+		particles[2].velocity = glm::vec3(0);
 
-		particles[0].position = glm::vec3(1, 0, 0);
+		particles[0].position = glm::vec3(0.05, 0.05, 0.5);
 		particles[0].color = glm::vec4(1);
 				  
-		particles[1].position = glm::vec3(0);
-		particles[1].color = glm::vec4(1, 0, 0, 1);*/
+		particles[1].position = glm::vec3(0,0,1.0);
+		particles[1].color = glm::vec4(1, 0, 0, 1);
+				  
+		particles[2].position = glm::vec3(0,0.05,1.5);
+		particles[2].color = glm::vec4(0, 0, 1, 1);*/
 		for (auto& particle : particles) {
 
 			particle.position = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
@@ -2010,6 +2014,7 @@ private:
 		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -2027,7 +2032,7 @@ private:
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, PARTICLE_COUNT / 256, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLE_COUNT, 1, 1);// /256
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");

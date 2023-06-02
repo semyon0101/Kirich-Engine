@@ -9,16 +9,6 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-//    int xHalf = 1280 / 2;
-//    if (gl_FragCoord.x > xHalf)
-//    {
-//        float depth = subpassLoad(inputDepth).r;
-//        float gray = 1.0 - depth;
-//        color = vec4(gray, gray, gray, 1.0);
-//    }
-//    else
-//        color = subpassLoad(inputColor).rgba;
-	//outColor =  vec4(subpassLoad(inputColorP2).rgb, 1);
-	outColor = vec4(subpassLoad(inputColorP1).rgb*(1-subpassLoad(inputColorP2).a)+subpassLoad(inputColorP2).rgb,1);
-
+	//outColor = vec4(subpassLoad(inputColorP1).rgb*(1-subpassLoad(inputColorP2).a)+subpassLoad(inputColorP2).rgb,1);
+	outColor = vec4(subpassLoad(inputColorP2).a);
 }

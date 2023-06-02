@@ -14,9 +14,4 @@ void main() {
     }else{
         outColor = vec4(0);
     }
-//    if (coord.x>0){
-//        outColor = vec4(fragColor, 1);
-//    }else {
-//        outColor = vec4(fragColor, (0.5+coord.x)*2);
-//    }
 }
