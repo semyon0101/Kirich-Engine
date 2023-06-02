@@ -9,6 +9,6 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-	//outColor = vec4(subpassLoad(inputColorP1).rgb*(1-subpassLoad(inputColorP2).a)+subpassLoad(inputColorP2).rgb,1);
-	outColor = vec4(subpassLoad(inputColorP2).a);
+	outColor = vec4(subpassLoad(inputColorP1).rgb*(1-subpassLoad(inputColorP2).a)+subpassLoad(inputColorP2).rgb,1);
+	//outColor = vec4(subpassLoad(inputColorP2).rgb,1);
 }
