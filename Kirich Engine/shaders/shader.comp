@@ -1,16 +1,16 @@
 #version 450
 
 struct Particle {
-	vec3 position;
-	vec3 velocity;
-    vec4 color;
+	vec2 position;
+	float angle;
+	float timeOfMadness;
 };
 
 layout (binding = 0) uniform ParameterUBO {
-    float deltaTime;
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+    int fps;
+    int width;
+    int height;
+	float randNumber;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
@@ -21,21 +21,91 @@ layout(std140, binding = 2) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in; 
+layout (rgba8, binding = 1, set = 1) uniform readonly image2D inputImage;
 
+
+vec2 getDirection (float angle);
+float getIntensity(vec2 position, float angle, float volume);
+float getRandom(float from, float to);
+
+uint index = gl_GlobalInvocationID.x;  
+vec2 size = vec2(ubo.width, ubo.height);
+
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main() 
 {
-	uint index = gl_GlobalInvocationID.x;  
-	particlesOut[index].position = particlesIn[index].position + particlesIn[index].velocity * ubo.deltaTime;
-	particlesOut[index].velocity = particlesIn[index].velocity;
+	float k = 0.1;
+	float radiys = 20;
 
-	if ((particlesOut[index].position.x <= -1.0) || (particlesOut[index].position.x >= 1.0)) {
-	    particlesOut[index].velocity.x = -particlesOut[index].velocity.x;
+	float angle = 0;
+	float l = getIntensity(particlesIn[index].position * (size/2)+(size/2), particlesIn[index].angle+k, radiys);
+	float f = getIntensity(particlesIn[index].position * (size/2)+(size/2), particlesIn[index].angle, radiys);
+	float r = getIntensity(particlesIn[index].position * (size/2)+(size/2), particlesIn[index].angle-k, radiys);
+	float timeOfMadness = particlesIn[index].timeOfMadness;
+
+	if (timeOfMadness<0){
+		float strength = 0;
+
+		if (f>=l && f>=r){
+			angle = particlesIn[index].angle;
+			strength=f;
+		}else if (l>r){
+			angle = particlesIn[index].angle+k;
+			strength=l;
+		}else {
+			angle = particlesIn[index].angle-k;
+			strength=r;
+		}
+	
+		if (max(strength, getIntensity(particlesIn[index].position * (size/2)+(size/2), 0, 0))>0.7){
+			timeOfMadness=0;
+			angle = getRandom(0, 6.29)+0.1;
+		} 
+
+	}else{
+		if (f<=l && f<=r){
+			angle = particlesIn[index].angle;
+		}else if (l<r){
+			angle = particlesIn[index].angle+k;
+		}else {
+			angle = particlesIn[index].angle-k;
+		}
+
+		float som = 0.1;
+		timeOfMadness+=1.0/ubo.fps;
+		if(timeOfMadness>=som){
+			timeOfMadness=-1;
+		}
 	}
-	if ((particlesOut[index].position.y <= -1.0) || (particlesOut[index].position.y >= 1.0)) {
-	    particlesOut[index].velocity.y = -particlesOut[index].velocity.y;
-	}
-	if ((particlesOut[index].position.z <= -1.0) || (particlesOut[index].position.z >= 1.0)) {
-	    particlesOut[index].velocity.z = -particlesOut[index].velocity.z;
-	}
+	
+	angle = angle+ getRandom(-0.05, 0.05)+0.01;
+
+	float pps = 1000;
+	vec2 velosity = getDirection(angle) / (size / 2) * pps / ubo.fps;
+	particlesOut[index].position = mod((particlesIn[index].position + velosity) + 1, 2) - 1;
+	particlesOut[index].angle = angle;
+	particlesOut[index].timeOfMadness = timeOfMadness;
+
+
+
+}
+
+
+float getRandom(float from, float to){
+	float delta = to - from;
+	return from + mod(ubo.randNumber*64.5+sin(index+1.54), delta);
+}
+
+
+vec2 getDirection (float angle)
+{
+	return vec2(cos(angle), sin(angle));
+}
+
+float getIntensity(vec2 position, float angle, float volume){
+	
+	ivec2 uv = ivec2(getDirection(angle) * volume + position);
+
+	return imageLoad(inputImage, uv).a;
 }

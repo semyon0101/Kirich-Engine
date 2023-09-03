@@ -33,7 +33,7 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLE_COUNT = std::pow(2, 10);
+const uint32_t ANT_COUNT = std::pow(2, 10);
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -84,10 +84,10 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-	float deltaTime = 1.0f;
+	float fps = 1.0f;
 };
 
-struct Particle {
+struct Ant {
 	glm::vec2 position;
 	glm::vec2 velocity;
 	glm::vec4 color;
@@ -95,7 +95,7 @@ struct Particle {
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Particle);
+		bindingDescription.stride = sizeof(Ant);
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 		return bindingDescription;
@@ -107,12 +107,12 @@ struct Particle {
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Particle, position);
+		attributeDescriptions[0].offset = offsetof(Ant, position);
 
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Particle, color);
+		attributeDescriptions[1].offset = offsetof(Ant, color);
 
 		return attributeDescriptions;
 	}
@@ -195,7 +195,7 @@ private:
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, PARTICLE_COUNT / 256, 1, 1);
+		vkCmdDispatch(commandBuffer, ANT_COUNT / 256, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -334,7 +334,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, ANT_COUNT, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -683,7 +683,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
 			storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			storageBufferInfoLastFrame.offset = 0;
-			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+			storageBufferInfoLastFrame.range = sizeof(Ant) * ANT_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = descriptorSets[i];
@@ -696,7 +696,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
 			storageBufferInfoCurrentFrame.buffer = shaderStorageBuffers[i];
 			storageBufferInfoCurrentFrame.offset = 0;
-			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+			storageBufferInfoCurrentFrame.range = sizeof(Ant) * ANT_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = descriptorSets[i];
@@ -744,7 +744,7 @@ private:
 		std::default_random_engine rndEngine((unsigned)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
-		std::vector<Particle> particles(PARTICLE_COUNT);
+		std::vector<Ant> particles(ANT_COUNT);
 		for (auto& particle : particles) {
 			float r = 0.25f * sqrt(rndDist(rndEngine));
 			float theta = rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
@@ -764,7 +764,7 @@ private:
 			particle.color = glm::vec4(rndDist(rndEngine)/2+0.5, rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine)/2+0.5, 1.0f);
 		}*/
 
-		VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
+		VkDeviceSize bufferSize = sizeof(Ant) * ANT_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -976,8 +976,8 @@ private:
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		auto bindingDescription = Particle::getBindingDescription();
-		auto attributeDescriptions = Particle::getAttributeDescriptions();
+		auto bindingDescription = Ant::getBindingDescription();
+		auto attributeDescriptions = Ant::getAttributeDescriptions();
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -1332,7 +1332,7 @@ private:
 
 	void updateUniformBuffer(uint32_t currentImage) {
 		UniformBufferObject ubo{};
-		ubo.deltaTime = lastFrameTime * 2.0f;
+		ubo.fps = lastFrameTime * 2.0f;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
