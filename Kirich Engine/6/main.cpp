@@ -909,8 +909,9 @@ private:
 
 
 	void createGraphicsPipeline1() {
-		auto vertShaderCode = readFile("shaders/vertP1.spv");
-		auto fragShaderCode = readFile("shaders/fragP1.spv");
+		auto vertShaderCode = readFile("6/shaders/vertP1.spv");
+		auto fragShaderCode = readFile("6/shaders/fragP1.spv");
+		
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1069,8 +1070,8 @@ private:
 
 
 	void createGraphicsPipeline2() {
-		auto vertShaderCode = readFile("shaders/vertP2.spv");
-		auto fragShaderCode = readFile("shaders/fragP2.spv");
+		auto vertShaderCode = readFile("6/shaders/vertP2.spv");
+		auto fragShaderCode = readFile("6/shaders/fragP2.spv");
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1194,9 +1195,9 @@ private:
 
 
 	void createGraphicsPipeline3() {
-
-		auto vertShaderCode = readFile("shaders/vertP3.spv");
-		auto fragShaderCode = readFile("shaders/fragP3.spv");
+		
+		auto vertShaderCode = readFile("6/shaders/vertP3.spv");
+		auto fragShaderCode = readFile("6/shaders/fragP3.spv");
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1319,7 +1320,7 @@ private:
 
 
 	void createComputePipeline() {
-		auto computeShaderCode = readFile("shaders/comp.spv");
+		auto computeShaderCode = readFile("6/shaders/comp.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -2269,8 +2270,11 @@ private:
 };
 
 int main() {
-	
-	system("shaders\\compile.bat");
+
+#ifdef NDEBUG
+#else
+	system("6\\shaders\\compile.bat");
+#endif
 	App app;
 
 	try {

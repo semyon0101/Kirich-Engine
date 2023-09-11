@@ -13,76 +13,96 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Файлы ресурсов\Shaders">
-      <UniqueIdentifier>{32603962-3584-4268-868a-f0ee1d3a0844}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\1">
+      <UniqueIdentifier>{10572acf-e819-4da5-9929-54eaf71a0aba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы ресурсов\Textures">
-      <UniqueIdentifier>{fd1cb66a-5950-43fa-b621-7afc614f6f7e}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\2">
+      <UniqueIdentifier>{41e91683-c219-4f9f-865e-937f6ece943d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы ресурсов\Models">
-      <UniqueIdentifier>{6283f98c-d723-4d54-b708-ab2afce59597}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\3">
+      <UniqueIdentifier>{810d8ac4-48aa-4946-81cd-1f85545d2a8d}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="mainSave2.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="mainSave.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="mainSave3.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="mainSave5.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
+    <Filter Include="Исходные файлы\4">
+      <UniqueIdentifier>{79c688ad-bb86-420c-b419-8d5928771ea1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\5">
+      <UniqueIdentifier>{3f6c9edc-86e2-4e04-a54f-01068fed26d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\6">
+      <UniqueIdentifier>{88205107-6e95-4b5c-b977-1b50413ff874}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\6\shaders">
+      <UniqueIdentifier>{857c2d23-1a4c-4c08-9b1f-c1fe09ec1248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\7">
+      <UniqueIdentifier>{19828f11-4e97-42a7-bc47-6a0f3142e0fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\7\shaders">
+      <UniqueIdentifier>{d93d7d6a-2313-4fc7-bcd9-bb36e2e3dcc2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
       <Filter>Файлы ресурсов</Filter>
     </None>
-    <None Include="shaders\compile.bat">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\compile.bat">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shader.comp">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shader.comp">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP1.frag">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP1.frag">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP1.vert">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP1.vert">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP2.frag">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP2.frag">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP2.vert">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP2.vert">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP3.frag">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP3.frag">
+      <Filter>Исходные файлы\6\shaders</Filter>
     </None>
-    <None Include="shaders\shaderP3.vert">
-      <Filter>Файлы ресурсов\Shaders</Filter>
+    <None Include="6\shaders\shaderP3.vert">
+      <Filter>Исходные файлы\6\shaders</Filter>
+    </None>
+    <None Include="7\shaders\compile.bat">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shader.comp">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shaderP1.frag">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shaderP1.vert">
+      <Filter>Исходные файлы\7\shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="textures\viking_room.png">
-      <Filter>Файлы ресурсов\Textures</Filter>
-    </Image>
-    <Image Include="textures\texture.jpg">
-      <Filter>Файлы ресурсов\Textures</Filter>
-    </Image>
-    <Image Include="mainSave4.cpp">
-      <Filter>Исходные файлы</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="models\viking_room.obj">
-      <Filter>Файлы ресурсов\Models</Filter>
-    </Object>
+    <ClCompile Include="1\main.cpp">
+      <Filter>Исходные файлы\1</Filter>
+    </ClCompile>
+    <ClCompile Include="2\main.cpp">
+      <Filter>Исходные файлы\2</Filter>
+    </ClCompile>
+    <ClCompile Include="3\main.cpp">
+      <Filter>Исходные файлы\3</Filter>
+    </ClCompile>
+    <ClCompile Include="4\main.cpp">
+      <Filter>Исходные файлы\4</Filter>
+    </ClCompile>
+    <ClCompile Include="5\main.cpp">
+      <Filter>Исходные файлы\5</Filter>
+    </ClCompile>
+    <ClCompile Include="6\main.cpp">
+      <Filter>Исходные файлы\6</Filter>
+    </ClCompile>
+    <ClCompile Include="7\main.cpp">
+      <Filter>Исходные файлы\7</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

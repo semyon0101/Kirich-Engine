@@ -147,52 +147,53 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
-    <None Include="shaders\compile.bat" />
-    <None Include="shaders\shader.comp" />
-    <None Include="shaders\shaderP1.frag" />
-    <None Include="shaders\shaderP1.vert" />
-    <None Include="shaders\shaderP2.frag" />
-    <None Include="shaders\shaderP2.vert" />
-    <None Include="shaders\shaderP3.frag" />
-    <None Include="shaders\shaderP3.vert" />
+    <None Include="6\shaders\compile.bat" />
+    <None Include="6\shaders\shader.comp" />
+    <None Include="6\shaders\shaderP1.frag" />
+    <None Include="6\shaders\shaderP1.vert" />
+    <None Include="6\shaders\shaderP2.frag" />
+    <None Include="6\shaders\shaderP2.vert" />
+    <None Include="6\shaders\shaderP3.frag" />
+    <None Include="6\shaders\shaderP3.vert" />
+    <None Include="7\shaders\compile.bat" />
+    <None Include="7\shaders\shader.comp" />
+    <None Include="7\shaders\shaderP1.frag" />
+    <None Include="7\shaders\shaderP1.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="mainSave.cpp">
+    <ClCompile Include="1\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </DeploymentContent>
     </ClCompile>
-    <ClCompile Include="mainSave2.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="mainSave3.cpp">
+    <ClCompile Include="2\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="mainSave5.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    <ClCompile Include="3\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <Image Include="mainSave4.cpp">
+    <ClCompile Include="4\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="textures\texture.jpg" />
-    <Image Include="textures\viking_room.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="models\viking_room.obj">
+    </ClCompile>
+    <ClCompile Include="5\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Object>
+    </ClCompile>
+    <ClCompile Include="6\main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="7\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
