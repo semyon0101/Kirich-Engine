@@ -36,7 +36,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t ANT_COUNT = 4000;//std::pow(2, 10);
+const uint32_t PARTICLES_COUNT = 4000;//std::pow(2, 10);
 
 const uint32_t PI = 3.14;
 
@@ -1473,7 +1473,7 @@ private:
 		rndEngine = std::default_random_engine((unsigned)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(-1.0f, 1.0f);
 
-		std::vector<Ant> particles(ANT_COUNT);
+		std::vector<Ant> particles(PARTICLES_COUNT);
 		for (auto& particle : particles) {
 
 			particle.position = glm::vec2(rndDist(rndEngine), rndDist(rndEngine));
@@ -1481,7 +1481,7 @@ private:
 			particle.timeOfMadness = -1;
 		}
 
-		VkDeviceSize bufferSize = sizeof(Ant) * ANT_COUNT;
+		VkDeviceSize bufferSize = sizeof(Ant) * PARTICLES_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1766,7 +1766,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
 			storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			storageBufferInfoLastFrame.offset = 0;
-			storageBufferInfoLastFrame.range = sizeof(Ant) * ANT_COUNT;
+			storageBufferInfoLastFrame.range = sizeof(Ant) * PARTICLES_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = descriptorSets[i];
@@ -1779,7 +1779,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
 			storageBufferInfoCurrentFrame.buffer = shaderStorageBuffers[i];
 			storageBufferInfoCurrentFrame.offset = 0;
-			storageBufferInfoCurrentFrame.range = sizeof(Ant) * ANT_COUNT;
+			storageBufferInfoCurrentFrame.range = sizeof(Ant) * PARTICLES_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = descriptorSets[i];
@@ -2094,7 +2094,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, ANT_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, PARTICLES_COUNT, 1, 0, 0);
 
 
 			vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
@@ -2134,7 +2134,7 @@ private:
 		std::array<VkDescriptorSet, 2> dSets = { descriptorSets[currentFrame], storageDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 2, dSets.data(), 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, ANT_COUNT, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");

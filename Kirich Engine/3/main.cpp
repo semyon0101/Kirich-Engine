@@ -35,7 +35,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t ANT_COUNT = std::pow(2, 10);
+const uint32_t PARTICLES_COUNT = std::pow(2, 10);
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -1095,7 +1095,7 @@ private:
 		std::default_random_engine rndEngine((unsigned)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
-		std::vector<Ant> particles(ANT_COUNT);
+		std::vector<Ant> particles(PARTICLES_COUNT);
 		for (auto& particle : particles) {
 			float r = 0.25f * sqrt(rndDist(rndEngine));
 			float theta = rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
@@ -1115,7 +1115,7 @@ private:
 			particle.color = glm::vec4(rndDist(rndEngine)/2+0.5, rndDist(rndEngine) / 2 + 0.5, rndDist(rndEngine)/2+0.5, 1.0f);
 		}*/
 
-		VkDeviceSize bufferSize = sizeof(Ant) * ANT_COUNT;
+		VkDeviceSize bufferSize = sizeof(Ant) * PARTICLES_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1279,7 +1279,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
 			storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			storageBufferInfoLastFrame.offset = 0;
-			storageBufferInfoLastFrame.range = sizeof(Ant) * ANT_COUNT;
+			storageBufferInfoLastFrame.range = sizeof(Ant) * PARTICLES_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = descriptorSets[i];
@@ -1292,7 +1292,7 @@ private:
 			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
 			storageBufferInfoCurrentFrame.buffer = shaderStorageBuffers[i];
 			storageBufferInfoCurrentFrame.offset = 0;
-			storageBufferInfoCurrentFrame.range = sizeof(Ant) * ANT_COUNT;
+			storageBufferInfoCurrentFrame.range = sizeof(Ant) * PARTICLES_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = descriptorSets[i];
@@ -1482,7 +1482,7 @@ private:
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, ANT_COUNT / 256, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -1549,7 +1549,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, ANT_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, PARTICLES_COUNT, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
