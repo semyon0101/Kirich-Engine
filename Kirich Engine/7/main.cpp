@@ -37,7 +37,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 8;
+const uint32_t PARTICLES_COUNT = 4;// 1024 * 64;
+const uint32_t DATA_INDEX_COUNT = 8;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -74,6 +75,14 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 struct Particles {
 	alignas(8) glm::vec2 position;
 
+	static unsigned int data[PARTICLES_COUNT * DATA_INDEX_COUNT];
+
+	static void SetDataDefaultValue() {
+		memset(data, 0, PARTICLES_COUNT * DATA_INDEX_COUNT);
+	}
+
+	static Particles particles[PARTICLES_COUNT];
+
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
@@ -94,6 +103,8 @@ struct Particles {
 		return attributeDescriptions;
 	}
 };
+unsigned int Particles::data[PARTICLES_COUNT * DATA_INDEX_COUNT] = { 0 };
+Particles Particles::particles[PARTICLES_COUNT] = {};
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsAndComputeFamily;
@@ -1066,11 +1077,11 @@ private:
 
 
 	void createParticlesBuffers() {
+		std::mt19937 gen(0);
+		std::uniform_real_distribution<> dist(-1, 1);
+		for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
-		std::vector<Particles> particles(PARTICLES_COUNT);
-		for (auto& particle : particles) {
-
-			particle.position = glm::vec2(0, 0);
+			Particles::particles[i].position = glm::vec2(0, 0);//dist(gen)
 		}
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
@@ -1081,7 +1092,7 @@ private:
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, particles.data(), (size_t)bufferSize);
+		memcpy(data, Particles::particles, (size_t)bufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
 		particlesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1090,7 +1101,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
 			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
 		}
@@ -1144,7 +1155,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * 64;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * DATA_INDEX_COUNT;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1352,6 +1363,7 @@ private:
 
 	void mainLoop() {
 		//thread = std::thread([this] {this->drawing(); });
+		auto start = std::chrono::steady_clock::now();
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			drawFrame();
@@ -1381,6 +1393,11 @@ private:
 			std::cout << std::endl;*/
 			char a;
 			std::cin >> a;
+			auto end = std::chrono::steady_clock::now();
+			std::cout << 1.0f/(std::chrono::duration_cast<std::chrono::microseconds>(end - start)/1000000.0f).count()<<"\n";
+			
+			start = end;
+
 		}
 		//thread.join();
 		vkDeviceWaitIdle(device);
@@ -1476,54 +1493,83 @@ private:
 	}
 
 	void updateParticlesDataBuffer() {
-		unsigned int data[PARTICLES_COUNT * 64];
+		Particles::SetDataDefaultValue();
+		
+		memcpy(Particles::particles, particlesBuffersMapped[currentFrame], sizeof(Particles) * PARTICLES_COUNT);
 
-		std::unordered_map<glm::vec2, std::vector<unsigned int>> map = {};
-
-		std::vector<Particles> particles(PARTICLES_COUNT);
-		memcpy(particles.data(), particlesBuffersMapped[currentFrame], sizeof(Particles) * PARTICLES_COUNT);
+		std::unordered_map<glm::ivec2, unsigned int[DATA_INDEX_COUNT]> map = {};
 		
 		for (int i = 0; i < PARTICLES_COUNT; ++i)
 		{
-			map[particles[i].position].push_back(i);
+			glm::vec2 pos = Particles::particles[i].position;
+			pos /= 3;
+			unsigned int* indexs = map[glm::ivec2(pos)];
+			for (int j = 0; j < DATA_INDEX_COUNT; ++j) {
+				if (indexs[j] == 0) { indexs[j] = i + 1; break; };
+			}
 		}
-		std::cout << map.count(glm::ivec2(-1, 0));
 
-
-		for (int i = 0; i < PARTICLES_COUNT; ++i)
+		/*for (int i = 0; i < PARTICLES_COUNT; ++i)
 		{
-			for (int j = 0; j < 3; ++j)
+			bool end = false;
+			for (int j = 0; j < 1; ++j)
 			{
+				if (end) break;
 				for (int m = -j; m < j + 1; ++m)
 				{
-					glm::ivec2 pos = glm::ivec2(m, -j);
+					if (end) break;
+					glm::vec2 pos = Particles::particles[i].position;
+					pos /= 3;
+					glm::ivec2 pos1 = glm::ivec2(m, -j) + glm::ivec2(pos);
+					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
 					
 				}
 				for (int m = -j + 1; m < j + 1; ++m)
 				{
-					glm::ivec2 pos = glm::ivec2(j, m);
+					if (end) break;
+					glm::vec2 pos = Particles::particles[i].position;
+					pos /= 3;
+					glm::ivec2 pos1 = glm::ivec2(j, m) + glm::ivec2(pos);
+					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
 					
 				}
 				for (int m = j - 1; m > -j - 1; --m)
 				{
-					glm::ivec2 pos = glm::ivec2(m, j);
+					if (end) break;
+					glm::vec2 pos = Particles::particles[i].position;
+					pos /= 3;
+					glm::ivec2 pos1 = glm::ivec2(m, j) + glm::ivec2(pos);
+					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
 					
 				}
 				for (int m = j - 1; m > -j; --m)
 				{
-					glm::ivec2 pos = glm::ivec2(-j, m);
+					if (end) break;
+					glm::vec2 pos = Particles::particles[i].position;
+					pos /= 3;
+					glm::ivec2 pos1 = glm::ivec2(-j, m) + glm::ivec2(pos);
+					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
 					
 				}
 			}
-		}
-		
-
-
-		memcpy(uniformBuffersMapped[currentFrame], data, sizeof(unsigned int) * PARTICLES_COUNT * 64);
+		}*/
+		memcpy(particlesDataBuffersMapped[currentFrame], Particles::data, sizeof(unsigned int) * PARTICLES_COUNT * DATA_INDEX_COUNT);
 	}
 
-	
-
+	void AddElements(int index, unsigned int* data, std::vector<unsigned int>& array, bool& end) {
+		int k = 0;
+		for (int i = 0; i < DATA_INDEX_COUNT; i++)
+		{
+			if (data[index* DATA_INDEX_COUNT +i]==0) {
+				if (array[k] == index+1) k += 1;
+				if (k == array.size()) return;
+				data[index * DATA_INDEX_COUNT + i] = array[k];
+				k += 1;
+			}
+			if (k == array.size()) return;
+			if (i == 63) { end = true; return; }
+		}
+	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 
