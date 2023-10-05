@@ -1,0 +1,32 @@
+#version 450
+
+struct Particle {
+	vec2 position;
+};
+
+layout (set = 0, binding = 0) uniform ParameterUBO {
+    int fps;
+    int width;
+    int height;
+} ubo;
+
+layout(std140, set = 1, binding = 0) readonly buffer ParticleSSBOIn {
+   Particle particlesIn[ ];
+};
+
+layout(std140, set = 1, binding = 1) buffer ParticleSSBOOut {
+   Particle particlesOut[ ];
+};
+
+layout(std140, set = 1, binding = 2) buffer ParticleData {
+    uint data[ ];
+};
+
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+void main() 
+{
+    uvec2 index = gl_GlobalInvocationID.xy;  
+
+    data[index.x*ubo.width/2+index.y]=0;
+}

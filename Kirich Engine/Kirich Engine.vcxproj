@@ -156,9 +156,11 @@
     <None Include="6\shaders\shaderP3.frag" />
     <None Include="6\shaders\shaderP3.vert" />
     <None Include="7\shaders\compile.bat" />
-    <None Include="7\shaders\shader.comp" />
+    <None Include="7\shaders\shaderP1.comp" />
     <None Include="7\shaders\shaderP1.frag" />
     <None Include="7\shaders\shaderP1.vert" />
+    <None Include="7\shaders\shaderP2.comp" />
+    <None Include="7\shaders\shaderP3.comp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="1\main.cpp">

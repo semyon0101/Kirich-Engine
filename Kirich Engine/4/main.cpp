@@ -222,7 +222,7 @@ private:
 		createRenderPass();
 		createDescriptorSetLayout();
 		createGraphicsPipeline1();
-		createComputePipeline();
+		createComputePipeline1();
 		createCommandPool();
 		createDepthResources();
 		createFramebuffers();
@@ -914,7 +914,7 @@ private:
 	}
 
 
-	void createComputePipeline() {
+	void createComputePipeline1() {
 		auto computeShaderCode = readFile("shaders/comp.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);

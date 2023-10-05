@@ -255,7 +255,7 @@ private:
 		createGraphicsPipeline1();
 		createGraphicsPipeline2();
 		createGraphicsPipeline3();
-		createComputePipeline();
+		createComputePipeline1();
 		createCommandPool();
 		createColorResources();
 		createFramebuffers();
@@ -1319,7 +1319,7 @@ private:
 	}
 
 
-	void createComputePipeline() {
+	void createComputePipeline1() {
 		auto computeShaderCode = readFile("6/shaders/comp.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);

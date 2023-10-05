@@ -37,8 +37,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 4;// 1024 * 64;
-const uint32_t DATA_INDEX_COUNT = 8;
+const uint32_t PARTICLES_COUNT = 1024 * 64;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -75,14 +74,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 struct Particles {
 	alignas(8) glm::vec2 position;
 
-	static unsigned int data[PARTICLES_COUNT * DATA_INDEX_COUNT];
-
-	static void SetDataDefaultValue() {
-		memset(data, 0, PARTICLES_COUNT * DATA_INDEX_COUNT);
-	}
-
-	static Particles particles[PARTICLES_COUNT];
-
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
@@ -103,8 +94,6 @@ struct Particles {
 		return attributeDescriptions;
 	}
 };
-unsigned int Particles::data[PARTICLES_COUNT * DATA_INDEX_COUNT] = { 0 };
-Particles Particles::particles[PARTICLES_COUNT] = {};
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsAndComputeFamily;
@@ -168,11 +157,17 @@ private:
 
 	VkRenderPass renderPass;
 
-	VkPipelineLayout graphicsPipelineLayout1;
-	VkPipeline graphicsPipeline1;
+	VkPipelineLayout graphicsPipelineLayout;
+	VkPipeline graphicsPipeline;
 
-	VkPipelineLayout computePipelineLayout;
-	VkPipeline computePipeline;
+	VkPipelineLayout computePipelineLayout1;
+	VkPipeline computePipeline1;
+
+	VkPipelineLayout computePipelineLayout2;
+	VkPipeline computePipeline2;
+
+	VkPipelineLayout computePipelineLayout3;
+	VkPipeline computePipeline3;
 
 	VkCommandPool commandPool;
 
@@ -190,7 +185,6 @@ private:
 
 	std::vector<VkBuffer> particlesDataBuffers;
 	std::vector<VkDeviceMemory> particlesDataBuffersMemory;
-	std::vector<void*> particlesDataBuffersMapped;
 
 	VkDescriptorPool particlesDescriptorPool;
 	VkDescriptorSetLayout particlesDescriptorSetLayout;
@@ -240,7 +234,7 @@ private:
 		createUniformDescriptorSetLayout();
 		createParticlesDescriptorSetLayout();
 		createGraphicsPipeline();
-		createComputePipeline();
+		createComputePipeline1();
 		createCommandPool();
 		createFramebuffers();
 		createUniformBuffers();
@@ -634,11 +628,11 @@ private:
 		swapChainImageViews.resize(swapChainImages.size());
 
 		for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-			swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+			swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -647,7 +641,7 @@ private:
 		viewInfo.format = format;
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = mipLevels;
+		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
@@ -887,7 +881,7 @@ private:
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout1) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
@@ -903,12 +897,12 @@ private:
 		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = graphicsPipelineLayout1;
+		pipelineInfo.layout = graphicsPipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline1) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
@@ -949,8 +943,8 @@ private:
 	}
 
 
-	void createComputePipeline() {
-		auto computeShaderCode = readFile("7/shaders/comp.spv");
+	void createComputePipeline1() {
+		auto computeShaderCode = readFile("7/shaders/compP1.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -967,16 +961,86 @@ private:
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &computePipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &computePipelineLayout1) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute pipeline layout!");
 		}
 
 		VkComputePipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipelineInfo.layout = computePipelineLayout;
+		pipelineInfo.layout = computePipelineLayout1;
 		pipelineInfo.stage = computeShaderStageInfo;
 
-		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline) != VK_SUCCESS) {
+		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline1) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline!");
+		}
+
+		vkDestroyShaderModule(device, computeShaderModule, nullptr);
+	}
+
+
+	void createComputePipeline2() {
+		auto computeShaderCode = readFile("7/shaders/compP2.spv");
+
+		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
+
+		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = computeShaderModule;
+		computeShaderStageInfo.pName = "main";
+
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { uniformDescriptorSetLayout, particlesDescriptorSetLayout };
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &computePipelineLayout2) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline layout!");
+		}
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = computePipelineLayout2;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline2) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline!");
+		}
+
+		vkDestroyShaderModule(device, computeShaderModule, nullptr);
+	}
+
+
+	void createComputePipeline3() {
+		auto computeShaderCode = readFile("7/shaders/compP3.spv");
+
+		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
+
+		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = computeShaderModule;
+		computeShaderStageInfo.pName = "main";
+
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { uniformDescriptorSetLayout, particlesDescriptorSetLayout };
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &computePipelineLayout3) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline layout!");
+		}
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = computePipelineLayout3;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline3) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute pipeline!");
 		}
 
@@ -1079,9 +1143,10 @@ private:
 	void createParticlesBuffers() {
 		std::mt19937 gen(0);
 		std::uniform_real_distribution<> dist(-1, 1);
+		std::vector<Particles> particles(PARTICLES_COUNT);
 		for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
-			Particles::particles[i].position = glm::vec2(0, 0);//dist(gen)
+			particles[i].position = glm::vec2(dist(gen), dist(gen));
 		}
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
@@ -1092,7 +1157,7 @@ private:
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, Particles::particles, (size_t)bufferSize);
+		memcpy(data, particles.data(), (size_t)bufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
 		particlesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1101,7 +1166,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
 			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
 		}
@@ -1155,16 +1220,15 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * DATA_INDEX_COUNT;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * width / 2 * height / 2;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-		particlesDataBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesDataBuffers[i], particlesDataBuffersMemory[i]);
+			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesDataBuffers[i], particlesDataBuffersMemory[i]);
 
-			vkMapMemory(device, particlesDataBuffersMemory[i], 0, bufferSize, 0, &particlesDataBuffersMapped[i]);
 		}
 	}
 
@@ -1289,7 +1353,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(Particles) * PARTICLES_COUNT;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * width / 2 * height / 2;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1391,11 +1455,11 @@ private:
 				std::cout << particles[i].index << " ";
 			}
 			std::cout << std::endl;*/
-			char a;
-			std::cin >> a;
+			/*char a;
+			std::cin >> a;*/
 			auto end = std::chrono::steady_clock::now();
-			std::cout << 1.0f/(std::chrono::duration_cast<std::chrono::microseconds>(end - start)/1000000.0f).count()<<"\n";
-			
+			std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
+
 			start = end;
 
 		}
@@ -1466,8 +1530,6 @@ private:
 		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-		updateParticlesDataBuffer();
-
 		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
 		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
 
@@ -1490,85 +1552,6 @@ private:
 		ubo.height = height;
 
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
-	}
-
-	void updateParticlesDataBuffer() {
-		Particles::SetDataDefaultValue();
-		
-		memcpy(Particles::particles, particlesBuffersMapped[currentFrame], sizeof(Particles) * PARTICLES_COUNT);
-
-		std::unordered_map<glm::ivec2, unsigned int[DATA_INDEX_COUNT]> map = {};
-		
-		for (int i = 0; i < PARTICLES_COUNT; ++i)
-		{
-			glm::vec2 pos = Particles::particles[i].position;
-			pos /= 3;
-			unsigned int* indexs = map[glm::ivec2(pos)];
-			for (int j = 0; j < DATA_INDEX_COUNT; ++j) {
-				if (indexs[j] == 0) { indexs[j] = i + 1; break; };
-			}
-		}
-
-		/*for (int i = 0; i < PARTICLES_COUNT; ++i)
-		{
-			bool end = false;
-			for (int j = 0; j < 1; ++j)
-			{
-				if (end) break;
-				for (int m = -j; m < j + 1; ++m)
-				{
-					if (end) break;
-					glm::vec2 pos = Particles::particles[i].position;
-					pos /= 3;
-					glm::ivec2 pos1 = glm::ivec2(m, -j) + glm::ivec2(pos);
-					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
-					
-				}
-				for (int m = -j + 1; m < j + 1; ++m)
-				{
-					if (end) break;
-					glm::vec2 pos = Particles::particles[i].position;
-					pos /= 3;
-					glm::ivec2 pos1 = glm::ivec2(j, m) + glm::ivec2(pos);
-					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
-					
-				}
-				for (int m = j - 1; m > -j - 1; --m)
-				{
-					if (end) break;
-					glm::vec2 pos = Particles::particles[i].position;
-					pos /= 3;
-					glm::ivec2 pos1 = glm::ivec2(m, j) + glm::ivec2(pos);
-					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
-					
-				}
-				for (int m = j - 1; m > -j; --m)
-				{
-					if (end) break;
-					glm::vec2 pos = Particles::particles[i].position;
-					pos /= 3;
-					glm::ivec2 pos1 = glm::ivec2(-j, m) + glm::ivec2(pos);
-					if (map.count(pos1))AddElements(i, Particles::data, map[pos1], end);
-					
-				}
-			}
-		}*/
-		memcpy(particlesDataBuffersMapped[currentFrame], Particles::data, sizeof(unsigned int) * PARTICLES_COUNT * DATA_INDEX_COUNT);
-	}
-
-	void AddElements(int index, unsigned int* data, std::vector<unsigned int>& array, bool& end) {
-		int k = 0;
-		for (int i = 0; i < DATA_INDEX_COUNT; i++)
-		{
-			if (data[index* DATA_INDEX_COUNT +i]==0) {
-				if (array[k] == index+1) k += 1;
-				if (k == array.size()) return;
-				data[index * DATA_INDEX_COUNT + i] = array[k];
-				k += 1;
-			}
-			if (k == array.size()) return;
-			if (i == 63) { end = true; return; }
-		}
 	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1612,7 +1595,7 @@ private:
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline1);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &particlesBuffers[currentFrame], offsets);
@@ -1633,12 +1616,20 @@ private:
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin recording compute command buffer!");
 		}
+		
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
-		std::array<VkDescriptorSet, 2> dSets = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 2, dSets.data(), 0, nullptr);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
+		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, width / 2, height / 2, 1);
 
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
+		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, width / 2, height / 2, 1);
+
+		
+
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -1667,11 +1658,11 @@ private:
 	void cleanup() {
 		cleanupSwapChain();
 
-		vkDestroyPipeline(device, graphicsPipeline1, nullptr);
-		vkDestroyPipelineLayout(device, graphicsPipelineLayout1, nullptr);
+		vkDestroyPipeline(device, graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(device, graphicsPipelineLayout, nullptr);
 
-		vkDestroyPipeline(device, computePipeline, nullptr);
-		vkDestroyPipelineLayout(device, computePipelineLayout, nullptr);
+		vkDestroyPipeline(device, computePipeline1, nullptr);
+		vkDestroyPipelineLayout(device, computePipelineLayout1, nullptr);
 
 		vkDestroyRenderPass(device, renderPass, nullptr);
 

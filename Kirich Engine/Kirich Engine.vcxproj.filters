@@ -72,13 +72,19 @@
     <None Include="7\shaders\compile.bat">
       <Filter>Исходные файлы\7\shaders</Filter>
     </None>
-    <None Include="7\shaders\shader.comp">
-      <Filter>Исходные файлы\7\shaders</Filter>
-    </None>
     <None Include="7\shaders\shaderP1.frag">
       <Filter>Исходные файлы\7\shaders</Filter>
     </None>
     <None Include="7\shaders\shaderP1.vert">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shaderP1.comp">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shaderP2.comp">
+      <Filter>Исходные файлы\7\shaders</Filter>
+    </None>
+    <None Include="7\shaders\shaderP3.comp">
       <Filter>Исходные файлы\7\shaders</Filter>
     </None>
   </ItemGroup>
