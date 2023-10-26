@@ -2,10 +2,11 @@
 
 struct Particle {
 	vec2 position;
+    vec2 lposition;
 };
 
 layout (set = 0, binding = 0) uniform ParameterUBO {
-    int fps;
+    int division;
     int width;
     int height;
 } ubo;
@@ -18,20 +19,44 @@ layout(std140, set = 1, binding = 1) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
-layout(std140, set = 1, binding = 2) readonly buffer ParticleData {
-    float data[];
+layout(set = 1, binding = 2) readonly buffer ParticleData {
+    uint data[ ];
 };
 
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main() 
 {
-    uint index = gl_GlobalInvocationID.x;  
+    uint id = gl_GlobalInvocationID.x;  
+    ivec2 location =  ivec2(particlesIn[id].position);
+//    if (data[location.x * ubo.height / ubo.division + location.y] != id + 1){
+//        particlesOut[id].position = vec2(0,0);
+//    }
 
-
-
-    particlesOut[index] = particlesIn[index];
+    float e = 1;
+    float s = 5;
+    float m = 1;
+    vec2 F = vec2(0, 0);
+    vec2 a = vec2(0, 0);
+    for(int x=-10; x<10; ++x){
+        for(int y=-10; y<10; ++y){
+            if(x==0 && y==0) continue;
+            ivec2 pos = location + ivec2(x, y);
+            uint index = data[pos.x * ubo.height / ubo.division + pos.y];
+            if(index != 0){
+                float r = length(particlesIn[id].position - particlesIn[index - 1].position);
+                float U = 4 * e * (pow(s/r,12)-pow(s/r,6));
+                F += (U/r) * normalize(particlesIn[id].position - particlesIn[index - 1].position);
+                // U=mah
+                // U/h=ma
+                // F=ma
+                
+                
+            }
+        }
+    }
     
-    
-    
+    a = F / m;
+    particlesOut[id].lposition = particlesIn[id].position;
+    particlesOut[id].position = 2 * particlesIn[id].position - particlesIn[id].lposition + a/100;
 }

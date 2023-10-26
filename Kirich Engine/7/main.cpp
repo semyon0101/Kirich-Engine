@@ -33,11 +33,12 @@
 #include <unordered_map>
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
+const int DIVISION_COUNT = 1;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 1024 * 64;
+const uint32_t PARTICLES_COUNT = 1024;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -73,6 +74,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 struct Particles {
 	alignas(8) glm::vec2 position;
+	alignas(8) glm::vec2 lposition;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
@@ -111,7 +113,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-	alignas(4) int fps = 1000;
+	alignas(4) int division = DIVISION_COUNT;
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
 };
@@ -235,6 +237,8 @@ private:
 		createParticlesDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline1();
+		createComputePipeline2();
+		createComputePipeline3();
 		createCommandPool();
 		createFramebuffers();
 		createUniformBuffers();
@@ -738,7 +742,7 @@ private:
 		layoutBindings[0].descriptorCount = 1;
 		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].pImmutableSamplers = nullptr;
-		layoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		layoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -874,7 +878,7 @@ private:
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		std::array<VkDescriptorSetLayout, 0> descriptorSetLayouts = {  };
+		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = { uniformDescriptorSetLayout };
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1141,13 +1145,19 @@ private:
 
 
 	void createParticlesBuffers() {
-		std::mt19937 gen(0);
-		std::uniform_real_distribution<> dist(-1, 1);
 		std::vector<Particles> particles(PARTICLES_COUNT);
+		std::mt19937 gen(0);
+		std::uniform_real_distribution<> dist(0, 1);
 		for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
-			particles[i].position = glm::vec2(dist(gen), dist(gen));
+			particles[i].position = glm::vec2(dist(gen)*width, dist(gen)*height);
+			particles[i].lposition = particles[i].position;
 		}
+		/*particles[0].position = glm::vec2(150.1, 100);
+		particles[0].lposition =  glm::vec2(150, 100);
+		particles[1].position =  glm::vec2(249.9, 100);
+		particles[1].lposition = glm::vec2(250, 100);*/
+
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
 
@@ -1220,13 +1230,13 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * width / 2 * height / 2;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * width / DIVISION_COUNT * height / DIVISION_COUNT;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesDataBuffers[i], particlesDataBuffersMemory[i]);
 
 		}
@@ -1353,7 +1363,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * width / 2 * height / 2;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * width / DIVISION_COUNT * height / DIVISION_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1432,31 +1442,24 @@ private:
 			glfwPollEvents();
 			drawFrame();
 
-			/*std::vector<Ant> particles(ANT_COUNT);
-
-			VkDeviceSize bufferSize = sizeof(Ant) * ANT_COUNT;
-
-			VkBuffer stagingBuffer;
-			VkDeviceMemory stagingBufferMemory;
-			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-			copyBuffer(shaderStorageBuffers[0], stagingBuffer, bufferSize);
-
-			void* data;
-			vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(particles.data(), data, (size_t)bufferSize);
-			vkUnmapMemory(device, stagingBufferMemory);
-
-			vkDestroyBuffer(device, stagingBuffer, nullptr);
-			vkFreeMemory(device, stagingBufferMemory, nullptr);
-
-			for (int i = 0; i <ANT_COUNT; i++)
+			
+			/*std::vector<Particles> particles(PARTICLES_COUNT);
+			VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
+			for (int frame = 0; frame < MAX_FRAMES_IN_FLIGHT; frame++)
 			{
-				std::cout << particles[i].index << " ";
-			}
-			std::cout << std::endl;*/
+				memcpy(particles.data(), particlesBuffersMapped[frame], (size_t)bufferSize);
+
+				for (int i = 0; i < PARTICLES_COUNT; i++)
+				{
+					std::cout << particles[i].position.x << " " << particles[i].position.y << ", ";
+				}
+				std::cout << std::endl;
+			}*/
+			
+
 			/*char a;
 			std::cin >> a;*/
+
 			auto end = std::chrono::steady_clock::now();
 			std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
 
@@ -1542,12 +1545,13 @@ private:
 			throw std::runtime_error("failed to submit compute command buffer!");
 		};
 
+
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void updateUniformBuffer() {
 		UniformBufferObject ubo{};
-		ubo.fps = 1000;
+		ubo.division = DIVISION_COUNT;
 		ubo.width = width;
 		ubo.height = height;
 
@@ -1597,6 +1601,9 @@ private:
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+			std::array<VkDescriptorSet, 1> dSetsP1 = { uniformDescriptorSets[currentFrame] };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout, 0, 1, dSetsP1.data(), 0, nullptr);
+
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &particlesBuffers[currentFrame], offsets);
 
@@ -1616,19 +1623,24 @@ private:
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin recording compute command buffer!");
 		}
-		
+
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width / 2, height / 2, 1);
+		vkCmdDispatch(commandBuffer, width / DIVISION_COUNT, height / DIVISION_COUNT, 1);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
 		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width / 2, height / 2, 1);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
 
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
+		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
 		
+
 
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
