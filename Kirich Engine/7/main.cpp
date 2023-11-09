@@ -38,7 +38,7 @@ const int DIVISION_COUNT = 1;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 1024;
+const uint32_t PARTICLES_COUNT = 10000;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -1148,15 +1148,23 @@ private:
 		std::vector<Particles> particles(PARTICLES_COUNT);
 		std::mt19937 gen(0);
 		std::uniform_real_distribution<> dist(0, 1);
-		for (int i = 0; i < PARTICLES_COUNT; ++i) {
+		/*for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
 			particles[i].position = glm::vec2(dist(gen)*width, dist(gen)*height);
 			particles[i].lposition = particles[i].position;
+		}*/
+		for (int i = 0; i < 100; ++i) {
+			for (int j = 0; j < 100; ++j) {
+
+				particles[i * 100 + j].position = glm::vec2(50+i*6, 50+j*6);
+				particles[i * 100 + j].lposition = particles[i * 100 + j].position;
+			}
 		}
-		/*particles[0].position = glm::vec2(150.1, 100);
+
+		/*particles[0].position = glm::vec2(151, 100);
 		particles[0].lposition =  glm::vec2(150, 100);
-		particles[1].position =  glm::vec2(249.9, 100);
-		particles[1].lposition = glm::vec2(250, 100);*/
+		particles[1].position =  glm::vec2(199, 100);
+		particles[1].lposition = glm::vec2(200, 100);*/
 
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
