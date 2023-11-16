@@ -28,9 +28,9 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main() 
 {
     uint id = gl_GlobalInvocationID.x;  
-    ivec2 location =  ivec2(particlesIn[id].position);
+    ivec2 location =  ivec2(round(particlesIn[id].position));
 
-    if(location.x>0 && location.x<ubo.width && location.y>0 && location.y<ubo.height){
+    //if(location.x>0 && location.x<ubo.width && location.y>0 && location.y<ubo.height){
         data[location.x * ubo.height / ubo.division + location.y] = id+1;
-    }
+    //}
 }

@@ -38,7 +38,7 @@ const int DIVISION_COUNT = 1;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 10000;
+const uint32_t PARTICLES_COUNT = 200 * 200 + 20 * 20 + 20 * 20;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -1153,17 +1153,46 @@ private:
 			particles[i].position = glm::vec2(dist(gen)*width, dist(gen)*height);
 			particles[i].lposition = particles[i].position;
 		}*/
-		for (int i = 0; i < 100; ++i) {
-			for (int j = 0; j < 100; ++j) {
 
-				particles[i * 100 + j].position = glm::vec2(50+i*6, 50+j*6);
-				particles[i * 100 + j].lposition = particles[i * 100 + j].position;
+		int index = 0;
+		for (int i = 0; i < 200; ++i) {
+			for (int j = 0; j < 200; ++j) {
+
+				particles[index].position = glm::vec2(400 + i * 2, 150 + j * 2);
+				particles[index].lposition = particles[index].position;
+				index++;
 			}
 		}
 
-		/*particles[0].position = glm::vec2(151, 100);
-		particles[0].lposition =  glm::vec2(150, 100);
-		particles[1].position =  glm::vec2(199, 100);
+		for (int i = 0; i < 20; ++i) {
+			for (int j = 0; j < 20; ++j) {
+				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
+
+					particles[index].position = glm::vec2(50 + i * 2, 300 + j * 2);
+					particles[index].lposition = particles[index].position + glm::vec2(-2, 0);
+
+					index++;
+
+				}
+			}
+		}
+
+		for (int i = 0; i < 20; ++i) {
+			for (int j = 0; j < 20; ++j) {
+				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
+
+					particles[index].position = glm::vec2(250 + i * 2, 300 + j * 2);
+					particles[index].lposition = particles[index].position + glm::vec2(-1, 0);
+
+					index++;
+
+				}
+			}
+		}
+
+		/*particles[0].position = glm::vec2(198, 100);
+		particles[0].lposition =  glm::vec2(198, 100);
+		particles[1].position =  glm::vec2(200, 100);
 		particles[1].lposition = glm::vec2(200, 100);*/
 
 
@@ -1450,20 +1479,20 @@ private:
 			glfwPollEvents();
 			drawFrame();
 
-			
+
 			/*std::vector<Particles> particles(PARTICLES_COUNT);
 			VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
-			for (int frame = 0; frame < MAX_FRAMES_IN_FLIGHT; frame++)
-			{
-				memcpy(particles.data(), particlesBuffersMapped[frame], (size_t)bufferSize);
 
-				for (int i = 0; i < PARTICLES_COUNT; i++)
-				{
-					std::cout << particles[i].position.x << " " << particles[i].position.y << ", ";
-				}
-				std::cout << std::endl;
-			}*/
-			
+			memcpy(particles.data(), particlesBuffersMapped[currentFrame], (size_t)bufferSize);
+
+			for (int i = 0; i < 2; i++)
+			{
+				std::cout << "pos: " << particles[i].position.x << " " << particles[i].position.y << ", v: " <<
+					particles[i].position.x - particles[i].lposition.x << " " << particles[i].position.y - particles[i].lposition.y<<"; ";
+			}
+			std::cout << "r: " << glm::length(particles[1].position.x - particles[0].position.x) << "; ";
+			std::cout << std::endl;*/
+
 
 			/*char a;
 			std::cin >> a;*/
@@ -1647,7 +1676,7 @@ private:
 		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
 		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
-		
+
 
 
 
