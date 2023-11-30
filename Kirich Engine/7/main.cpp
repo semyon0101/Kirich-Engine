@@ -33,12 +33,11 @@
 #include <unordered_map>
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const int DIVISION_COUNT = 1;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 200 * 200 + 20 * 20 + 20 * 20;
+const uint32_t PARTICLES_COUNT = 50 * 50 + /*20 * 20 + 20 * 20 */+ 2 * WIDTH + 2 * HEIGHT-4;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -75,6 +74,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 struct Particles {
 	alignas(8) glm::vec2 position;
 	alignas(8) glm::vec2 lposition;
+	alignas(4) int type;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
@@ -85,13 +85,18 @@ struct Particles {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 1> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions{};
+	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Particles, position);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(Particles, lposition);
 
 		return attributeDescriptions;
 	}
@@ -113,7 +118,6 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-	alignas(4) int division = DIVISION_COUNT;
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
 };
@@ -1147,30 +1151,32 @@ private:
 	void createParticlesBuffers() {
 		std::vector<Particles> particles(PARTICLES_COUNT);
 		std::mt19937 gen(0);
-		std::uniform_real_distribution<> dist(0, 1);
-		/*for (int i = 0; i < PARTICLES_COUNT; ++i) {
+		/*std::uniform_real_distribution<> dist(0.1,0.9);
+		for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
 			particles[i].position = glm::vec2(dist(gen)*width, dist(gen)*height);
 			particles[i].lposition = particles[i].position;
 		}*/
 
+		std::uniform_real_distribution<> dist(-1, 1);
 		int index = 0;
-		for (int i = 0; i < 200; ++i) {
-			for (int j = 0; j < 200; ++j) {
+		for (int i = 0; i < 50; ++i) {
+			for (int j = 0; j < 50; ++j) {
 
-				particles[index].position = glm::vec2(400 + i * 2, 150 + j * 2);
-				particles[index].lposition = particles[index].position;
+				particles[index].position = glm::vec2(350 + i * 4, 370 + j * 4);
+				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+				particles[index].type = 1;
 				index++;
 			}
-		}
+		}/*
 
 		for (int i = 0; i < 20; ++i) {
 			for (int j = 0; j < 20; ++j) {
 				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
 
 					particles[index].position = glm::vec2(50 + i * 2, 300 + j * 2);
-					particles[index].lposition = particles[index].position + glm::vec2(-2, 0);
-
+					particles[index].lposition = particles[index].position + glm::vec2(-0.1, 0) + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+					particles[index].type = 1;
 					index++;
 
 				}
@@ -1182,13 +1188,42 @@ private:
 				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
 
 					particles[index].position = glm::vec2(250 + i * 2, 300 + j * 2);
-					particles[index].lposition = particles[index].position + glm::vec2(-1, 0);
-
+					particles[index].lposition = particles[index].position + glm::vec2(-0.1, 0) + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+					particles[index].type = 1;
 					index++;
 
 				}
 			}
+		}*/
+		for (int i = 1; i < WIDTH; ++i) {
+
+			particles[index].position = glm::vec2(i, 1);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
 		}
+		for (int i = 1; i < WIDTH; ++i) {
+
+			particles[index].position = glm::vec2(i, HEIGHT-1);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < HEIGHT; ++i) {
+
+			particles[index].position = glm::vec2(1, i);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < HEIGHT; ++i) {
+
+			particles[index].position = glm::vec2(WIDTH-1, i);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+
 
 		/*particles[0].position = glm::vec2(198, 100);
 		particles[0].lposition =  glm::vec2(198, 100);
@@ -1212,7 +1247,7 @@ private:
 		particlesBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
 			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
@@ -1267,7 +1302,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * width / DIVISION_COUNT * height / DIVISION_COUNT;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * width * height;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1400,7 +1435,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * width / DIVISION_COUNT * height / DIVISION_COUNT;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * width * height;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1588,7 +1623,6 @@ private:
 
 	void updateUniformBuffer() {
 		UniformBufferObject ubo{};
-		ubo.division = DIVISION_COUNT;
 		ubo.width = width;
 		ubo.height = height;
 
@@ -1665,7 +1699,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width / DIVISION_COUNT, height / DIVISION_COUNT, 1);
+		vkCmdDispatch(commandBuffer, width, height, 1);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
 		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };

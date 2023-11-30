@@ -3,19 +3,19 @@
 struct Particle {
 	vec2 position;
     vec2 lposition;
+    int type;
 };
 
 layout (set = 0, binding = 0) uniform ParameterUBO {
-    int division;
     int width;
     int height;
 } ubo;
 
-layout(std140, set = 1, binding = 0) readonly buffer ParticleSSBOIn {
+layout(set = 1, binding = 0) readonly buffer ParticleSSBOIn {
    Particle particlesIn[ ];
 };
 
-layout(std140, set = 1, binding = 1) buffer ParticleSSBOOut {
+layout( set = 1, binding = 1) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
@@ -29,5 +29,5 @@ void main()
 {
     uvec2 id = gl_GlobalInvocationID.xy;  
 
-    data[id.x * ubo.height / ubo.division + id.y]=0;
+    data[id.x * ubo.height + id.y] = 0;
 }
