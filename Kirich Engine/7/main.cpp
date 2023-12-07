@@ -37,7 +37,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 50 * 50 + /*20 * 20 + 20 * 20 */+ 2 * WIDTH + 2 * HEIGHT-4;
+const uint32_t PARTICLES_COUNT = 50 * 50 + /*20 * 20 + 20 * 20 */+WIDTH / 2 + HEIGHT / 2 + 1000;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -1161,14 +1161,15 @@ private:
 		std::uniform_real_distribution<> dist(-1, 1);
 		int index = 0;
 		for (int i = 0; i < 50; ++i) {
-			for (int j = 0; j < 50; ++j) {
+			for (int j = 0; j < 20; ++j) {
 
-				particles[index].position = glm::vec2(350 + i * 4, 370 + j * 4);
+				particles[index].position = glm::vec2(250 + i * 4, 30 + j * 4);
 				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
 				particles[index].type = 1;
 				index++;
 			}
-		}/*
+		}
+		/*
 
 		for (int i = 0; i < 20; ++i) {
 			for (int j = 0; j < 20; ++j) {
@@ -1195,35 +1196,77 @@ private:
 				}
 			}
 		}*/
-		for (int i = 1; i < WIDTH; ++i) {
+		for (int i = 1; i < WIDTH / 4; ++i) {
 
-			particles[index].position = glm::vec2(i, 1);
+			particles[index].position = glm::vec2(i * 4, 10);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < WIDTH; ++i) {
+		for (int i = 1; i < WIDTH / 4; ++i) {
 
-			particles[index].position = glm::vec2(i, HEIGHT-1);
+			particles[index].position = glm::vec2(i * 4, HEIGHT - 10);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < HEIGHT; ++i) {
+		for (int i = 1; i < HEIGHT / 4; ++i) {
 
-			particles[index].position = glm::vec2(1, i);
+			particles[index].position = glm::vec2(10, i * 4);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < HEIGHT; ++i) {
+		for (int i = 1; i < HEIGHT / 4; ++i) {
 
-			particles[index].position = glm::vec2(WIDTH-1, i);
+			particles[index].position = glm::vec2(WIDTH - 10, i * 4);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
 
+		for (int i = 1; i < 50; ++i) {
+
+			particles[index].position = glm::vec2(i * 4 + 100, i * 4 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 50; ++i) {
+
+			particles[index].position = glm::vec2(-i * 4 + 550, i * 4 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 150; ++i) {
+
+			particles[index].position = glm::vec2(100, i * 4);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 150; ++i) {
+
+			particles[index].position = glm::vec2(550, i * 4);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 150; ++i) {
+
+			particles[index].position = glm::vec2(50 * 4 + 100, (i + 50) * 4 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 150; ++i) {
+
+			particles[index].position = glm::vec2(-50 * 4 + 550, (i + 50) * 4 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
 
 		/*particles[0].position = glm::vec2(198, 100);
 		particles[0].lposition =  glm::vec2(198, 100);
@@ -1309,7 +1352,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesDataBuffers[i], particlesDataBuffersMemory[i]);
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, particlesDataBuffers[i], particlesDataBuffersMemory[i]);
 
 		}
 	}
@@ -1795,14 +1838,14 @@ private:
 
 		for (auto framebuffer : swapChainFramebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
-		}
+	}
 
 		for (auto imageView : swapChainImageViews) {
 			vkDestroyImageView(device, imageView, nullptr);
 		}
 
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
-	}
+}
 };
 
 int main() {
