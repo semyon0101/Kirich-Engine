@@ -1,25 +1,32 @@
 #version 450
 
+struct ParticleType{
+    float rmin;
+    float e;
+    float m;
+};
+
+layout (set = 0, binding = 0) uniform ParameterUBO {
+    ParticleType particleTypes[2];
+    int PDWidth;
+    int PDHeight;
+} ubo;
+
 struct Particle {
 	vec2 position;
     vec2 lposition;
     int type;
 };
 
-layout (set = 0, binding = 0) uniform ParameterUBO {
-    int width;
-    int height;
-} ubo;
-
-layout(set = 1, binding = 0) readonly buffer ParticleSSBOIn {
+layout(std430, set = 1, binding = 0) readonly buffer ParticleSSBOIn {
    Particle particlesIn[ ];
 };
 
-layout( set = 1, binding = 1) buffer ParticleSSBOOut {
+layout(std430, set = 1, binding = 1) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
-layout( set = 1, binding = 2) buffer ParticleData {
+layout(std430, set = 1, binding = 2) buffer ParticleData {
     uint data[ ];
 };
 
@@ -29,5 +36,5 @@ void main()
 {
     uvec2 id = gl_GlobalInvocationID.xy;  
 
-    data[id.x * ubo.height + id.y] = 0;
+    data[id.x * ubo.PDHeight + id.y] = 0;
 }

@@ -37,7 +37,10 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PARTICLES_COUNT = 50 * 50 + /*20 * 20 + 20 * 20 */+WIDTH / 2 + HEIGHT / 2 + 1000;
+const uint32_t PDWIDTH = WIDTH;
+const uint32_t PDHEIGHT = HEIGHT;
+
+const uint32_t PARTICLES_COUNT = 256 * 17;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -117,9 +120,18 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct UniformBufferObjectParticleType {
+	alignas(4) float rmin;
+	alignas(4) float e;
+	alignas(8) float m;
+	
+};
+
 struct UniformBufferObject {
-	alignas(4) int width = WIDTH;
-	alignas(4) int height = HEIGHT;
+	UniformBufferObjectParticleType particleParametrs[2] = { {5, 0.1f, 0}, {2.5f, 1, 1000} };
+	alignas(4) int PDWidth = PDWIDTH;
+	alignas(4) int PDHeight = PDHEIGHT;
+
 };
 
 class App {
@@ -201,6 +213,7 @@ private:
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkSemaphore> computeFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> computeInFlightFences;
 
@@ -1159,16 +1172,26 @@ private:
 		}*/
 
 		std::uniform_real_distribution<> dist(-1, 1);
-		int index = 0;
-		for (int i = 0; i < 50; ++i) {
-			for (int j = 0; j < 20; ++j) {
+		//int index = 0;
+		//for (int i = 0; i < 50; ++i) {
+		//	for (int j = 0; j < 20; ++j) {
 
-				particles[index].position = glm::vec2(250 + i * 4, 30 + j * 4);
-				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
-				particles[index].type = 1;
-				index++;
-			}
+		//		particles[index].position = glm::vec2(210 + i * 5, 35 + j * 5);
+		//		particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
+		//		particles[index].type = 1;
+		//		index++;
+		//	}
+		//}
+		int index = 0;
+		for (int i = 0; i < 2; ++i) {
+
+			particles[index].position = glm::vec2(210 + i * 6, 300);
+			particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
+			particles[index].type = 1;
+			index++;
 		}
+
+
 		/*
 
 		for (int i = 0; i < 20; ++i) {
@@ -1290,10 +1313,10 @@ private:
 		particlesBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, particlesBuffers[i], particlesBuffersMemory[i]);
+			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,// VK_BUFFER_USAGE_TRANSFER_SRC_BIT 
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, particlesBuffers[i], particlesBuffersMemory[i]);//  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
-			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
+			//vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
 		}
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -1527,6 +1550,7 @@ private:
 	void createSyncObjects() {
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		computeFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 		computeInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -1543,7 +1567,8 @@ private:
 				vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create graphics synchronization objects for a frame!");
 			}
-			if (vkCreateFence(device, &fenceInfo, nullptr, &computeInFlightFences[i]) != VK_SUCCESS) {
+			if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &computeFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(device, &fenceInfo, nullptr, &computeInFlightFences[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create compute synchronization objects for a frame!");
 			}
 		}
@@ -1587,11 +1612,32 @@ private:
 
 	void drawFrame() {
 
-		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &inFlightFences[currentFrame]);
-		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(device, 1, &inFlightFences[(currentFrame-1)%MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame-1)%MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
 
 		updateUniformBuffer();
+
+		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
+
+
+		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
+		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &computeCommandBuffers[currentFrame];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &computeFinishedSemaphores[currentFrame];
+
+		if (vkQueueSubmit(computeQueue, 1, &submitInfo, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to submit compute command buffer!");
+		};
+
+
+		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
 		uint32_t imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1607,12 +1653,12 @@ private:
 		vkResetCommandBuffer(graphicsCommandBuffers[currentFrame], 0);
 		recordGraphicsCommandBuffer(graphicsCommandBuffers[currentFrame], imageIndex);
 
-		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore waitSemaphores[] = { computeFinishedSemaphores[currentFrame], imageAvailableSemaphores[currentFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		VkSubmitInfo submitInfo{};
+		submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.waitSemaphoreCount = 2;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
@@ -1623,6 +1669,7 @@ private:
 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
+
 
 		VkSwapchainKHR swapChains[] = { swapChain };
 
@@ -1644,32 +1691,48 @@ private:
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
-		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
-		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
-		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
-
-		submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &computeCommandBuffers[currentFrame];
-
-		if (vkQueueSubmit(computeQueue, 1, &submitInfo, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to submit compute command buffer!");
-		};
-
-
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void updateUniformBuffer() {
 		UniformBufferObject ubo{};
-		ubo.width = width;
-		ubo.height = height;
-
+		ubo.PDWidth = PDWIDTH;
+		ubo.PDHeight = PDHEIGHT;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+	}
+
+	void recordComputeCommandBuffer(VkCommandBuffer commandBuffer) {
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording compute command buffer!");
+		}
+
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
+		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, width, height, 1);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
+		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
+		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+		
+		
+
+
+
+
+		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record compute command buffer!");
+		}
 	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1727,38 +1790,6 @@ private:
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
-
-	void recordComputeCommandBuffer(VkCommandBuffer commandBuffer) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording compute command buffer!");
-		}
-
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
-		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width, height, 1);
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
-		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
-		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
-
-
-
-
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record compute command buffer!");
 		}
 	}
 
@@ -1838,20 +1869,19 @@ private:
 
 		for (auto framebuffer : swapChainFramebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
-	}
+		}
 
 		for (auto imageView : swapChainImageViews) {
 			vkDestroyImageView(device, imageView, nullptr);
 		}
 
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
-}
+	}
 };
 
 int main() {
 
-#ifdef NDEBUG
-#else
+#ifdef _DEBUG
 	system("7\\shaders\\compile.bat");
 #endif
 	App app;
