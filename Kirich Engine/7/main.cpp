@@ -1172,23 +1172,15 @@ private:
 		}*/
 
 		std::uniform_real_distribution<> dist(-1, 1);
-		//int index = 0;
-		//for (int i = 0; i < 50; ++i) {
-		//	for (int j = 0; j < 20; ++j) {
-
-		//		particles[index].position = glm::vec2(210 + i * 5, 35 + j * 5);
-		//		particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
-		//		particles[index].type = 1;
-		//		index++;
-		//	}
-		//}
 		int index = 0;
-		for (int i = 0; i < 2; ++i) {
+		for (int i = 0; i < 50; ++i) {
+			for (int j = 0; j < 20; ++j) {
 
-			particles[index].position = glm::vec2(210 + i * 6, 300);
-			particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
-			particles[index].type = 1;
-			index++;
+				particles[index].position = glm::vec2(210 + i * 5, 35 + j * 5);
+				particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
+				particles[index].type = 1;
+				index++;
+			}
 		}
 
 
@@ -1709,22 +1701,25 @@ private:
 			throw std::runtime_error("failed to begin recording compute command buffer!");
 		}
 
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT*10; i++)
+		{
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
-		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width, height, 1);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
+			std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
+			vkCmdDispatch(commandBuffer, width, height, 1);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
-		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
+			std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
+			vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
-		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
-		
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
+			std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
+			vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+			currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		}
 		
 
 
