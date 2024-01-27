@@ -10,6 +10,8 @@ layout (set = 0, binding = 0) uniform ParameterUBO {
     ParticleType particleTypes[2];
     int PDWidth;
     int PDHeight;
+    int width;
+    int height;
 } ubo;
 
 struct Particle {
@@ -36,5 +38,5 @@ void main()
 {
     uvec2 id = gl_GlobalInvocationID.xy;  
 
-    data[id.x * ubo.PDHeight + id.y] = 0;
+    if (true) data[id.x * ubo.PDHeight + id.y] = 0;
 }

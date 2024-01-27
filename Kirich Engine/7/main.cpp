@@ -37,8 +37,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const uint32_t PDWIDTH = WIDTH;
-const uint32_t PDHEIGHT = HEIGHT;
+const uint32_t PDWIDTH = WIDTH * 2;
+const uint32_t PDHEIGHT = HEIGHT * 2;
 
 const uint32_t PARTICLES_COUNT = 256 * 17;
 
@@ -124,13 +124,15 @@ struct UniformBufferObjectParticleType {
 	alignas(4) float rmin;
 	alignas(4) float e;
 	alignas(8) float m;
-	
+
 };
 
 struct UniformBufferObject {
 	UniformBufferObjectParticleType particleParametrs[2] = { {5, 0.1f, 0}, {2.5f, 1, 1000} };
 	alignas(4) int PDWidth = PDWIDTH;
 	alignas(4) int PDHeight = PDHEIGHT;
+	alignas(4) int width = WIDTH;
+	alignas(4) int height = HEIGHT;
 
 };
 
@@ -318,7 +320,7 @@ private:
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		
+
 		for (const char* layerName : validationLayers) {
 			bool layerFound = false;
 			for (const auto& layerProperties : availableLayers) {
@@ -1287,7 +1289,6 @@ private:
 		particles[1].position =  glm::vec2(200, 100);
 		particles[1].lposition = glm::vec2(200, 100);*/
 
-
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
 
 		VkBuffer stagingBuffer;
@@ -1359,7 +1360,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * width * height;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PDWIDTH * PDHEIGHT;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1492,7 +1493,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * width * height;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * PDWIDTH * PDHEIGHT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1603,14 +1604,14 @@ private:
 
 	void drawFrame() {
 
-		vkWaitForFences(device, 1, &inFlightFences[(currentFrame-1)%MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
-		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame-1)%MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(device, 1, &inFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
 
-		updateUniformBuffer();
 
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 
+		updateUniformBuffer();
 
 		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
 		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
@@ -1625,7 +1626,7 @@ private:
 		if (vkQueueSubmit(computeQueue, 1, &submitInfo, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit compute command buffer!");
 		};
-		
+
 
 
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -1690,6 +1691,8 @@ private:
 		UniformBufferObject ubo{};
 		ubo.PDWidth = PDWIDTH;
 		ubo.PDHeight = PDHEIGHT;
+		ubo.width = width;
+		ubo.height = height;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 	}
 
@@ -1700,24 +1703,24 @@ private:
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin recording compute command buffer!");
 		}
-		
-		
+
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, width, height, 1);
+		vkCmdDispatch(commandBuffer, PDWIDTH, PDHEIGHT, 1);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
 		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline3);
 		std::array<VkDescriptorSet, 2> dSetsP3 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout3, 0, 2, dSetsP3.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);	
-		
-			
+		vkCmdDispatch(commandBuffer, PARTICLES_COUNT / 256, 1, 1);
+
+
 
 
 
