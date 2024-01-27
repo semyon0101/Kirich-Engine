@@ -58,8 +58,8 @@ void main()
 
     vec2 F = vec2(0, 0);
 
-    for(int x=-9; x<=9; ++x){
-        for(int y=-9; y<=9; ++y){
+    for(int x=-20; x<=20; ++x){
+        for(int y=-20; y<=20; ++y){
             if(x==0 && y==0) continue;
 
             ivec2 pos = ivec2(currentParticle.position) + ivec2(x, y);
@@ -70,19 +70,21 @@ void main()
                 ParticleType nextParticleType = ubo.particleTypes[nextParticle.type];
                 float r = length(currentParticle.position - nextParticle.position);
 
-                if(r < 10){
+                if(r < 20){
                     float rmin = currentParticleType.rmin + nextParticleType.rmin;
                     float e = currentParticleType.e * nextParticleType.e;
 
                     float f = 12 * e / r * (pow(rmin / r, 12) - pow(rmin / r, 6));
                     F += f * normalize(currentParticle.position - nextParticle.position);
+                    if (nextParticle.type==0){
+                        F-=(currentParticle.position - currentParticle.lposition)*rmin/length(currentParticle.position - nextParticle.position);
+                    }
                 }
             }
         }
     }
 
-    F -= (currentParticle.position - currentParticle.lposition);
-    F += vec2(0,0.07);
+    F += vec2(0,0.03);
 //    if (length(F)!=0){
 //        F = normalize(F) * min(length(F), 5000);
 //    }
