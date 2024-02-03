@@ -6,7 +6,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
     
 
-
-    outColor = vec4(1, densesy, densesy, 1);
+    float a = (0.5-length(gl_PointCoord-0.5))*2;
+    outColor = vec4(1, densesy, densesy, a);
     
 }

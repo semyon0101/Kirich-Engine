@@ -115,8 +115,8 @@ struct SwapChainSupportDetails {
 
 struct UniformBufferObject {
 	alignas(4) int fps = 1000;
-	alignas(4) int PDWidth = WIDTH;
-	alignas(4) int PDHeight = HEIGHT;
+	alignas(4) int width = WIDTH;
+	alignas(4) int height = HEIGHT;
 	alignas(4) float randomNumber = 0.0f;
 };
 
@@ -2041,8 +2041,8 @@ private:
 
 		UniformBufferObject ubo{};
 		ubo.fps = 1000;
-		ubo.PDWidth = width;
-		ubo.PDHeight = height;
+		ubo.width = width;
+		ubo.height = height;
 		ubo.randomNumber = rndDist(rndEngine);
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));

@@ -34,13 +34,10 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t WIDTH = 1280;
+const uint32_t HEIGHT = 720;
 
-const uint32_t PDWIDTH = WIDTH;
-const uint32_t PDHEIGHT = HEIGHT;
-
-const uint32_t PARTICLES_COUNT = 256 * 17;
+const uint32_t PARTICLES_COUNT = 10000;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -88,8 +85,8 @@ struct Particles {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
@@ -100,6 +97,11 @@ struct Particles {
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[1].offset = offsetof(Particles, lposition);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32_SINT;
+		attributeDescriptions[2].offset = offsetof(Particles, type);
 
 		return attributeDescriptions;
 	}
@@ -128,9 +130,9 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[2] = { {5, 0.1f, 0}, {2.5f, 1, 1000} };
-	alignas(4) int PDWidth = PDWIDTH;
-	alignas(4) int PDHeight = PDHEIGHT;
+	UniformBufferObjectParticleType particleParametrs[2] = { {5, 0.1f, 0}, {2, 1, 1000} };
+	alignas(4) int width = WIDTH;
+	alignas(4) int height = HEIGHT;
 
 };
 
@@ -1164,6 +1166,7 @@ private:
 	void createParticlesBuffers() {
 		std::vector<Particles> particles(PARTICLES_COUNT);
 		std::mt19937 gen(0);
+		int index = 0;
 		/*std::uniform_real_distribution<> dist(0.1,0.9);
 		for (int i = 0; i < PARTICLES_COUNT; ++i) {
 
@@ -1172,45 +1175,36 @@ private:
 		}*/
 
 		std::uniform_real_distribution<> dist(-1, 1);
-		int index = 0;
-		for (int i = 0; i < 50; ++i) {
+		
+		/*for (int i = 0; i < 20; ++i) {
 			for (int j = 0; j < 20; ++j) {
 
-				particles[index].position = glm::vec2(210 + i * 5, 35 + j * 5);
-				particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
+				particles[index].position = glm::vec2(100 + i * 5, 100 + j * 5);
+				particles[index].lposition = particles[index].position +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 				particles[index].type = 1;
 				index++;
 			}
 		}
 
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 10; ++j) {
+				if (pow(i-5,2)+pow(j-5,2) > 5 * 5)continue;
+				particles[index].position = glm::vec2(250 + i * 5, 125 + j * 5);
+				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100)+glm::vec2(1,0);
+				particles[index].type = 1;
+				index++;
+			}
+		}*/
+		for (int i = 0; i < 40; ++i) {
+			for (int j = 0; j < 40; ++j) {
 
-		/*
-
-		for (int i = 0; i < 20; ++i) {
-			for (int j = 0; j < 20; ++j) {
-				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
-
-					particles[index].position = glm::vec2(50 + i * 2, 300 + j * 2);
-					particles[index].lposition = particles[index].position + glm::vec2(-0.1, 0) + glm::vec2(dist(gen) / 100, dist(gen) / 100);
-					particles[index].type = 1;
-					index++;
-
-				}
+				particles[index].position = glm::vec2(250 + i * 4, 20 + j * 4);
+				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+				particles[index].type = 1;
+				index++;
 			}
 		}
 
-		for (int i = 0; i < 20; ++i) {
-			for (int j = 0; j < 20; ++j) {
-				if (pow(i - 10, 2) + pow(j - 10, 2) < pow(10, 2)) {
-
-					particles[index].position = glm::vec2(250 + i * 2, 300 + j * 2);
-					particles[index].lposition = particles[index].position + glm::vec2(-0.1, 0) + glm::vec2(dist(gen) / 100, dist(gen) / 100);
-					particles[index].type = 1;
-					index++;
-
-				}
-			}
-		}*/
 		for (int i = 1; i < WIDTH / 4; ++i) {
 
 			particles[index].position = glm::vec2(i * 4, 10);
@@ -1247,27 +1241,14 @@ private:
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < 50; ++i) {
-
-			particles[index].position = glm::vec2(-i * 4 + 550, i * 4 + 50);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < 150; ++i) {
+		for (int i = 1; i < 200; ++i) {
 
 			particles[index].position = glm::vec2(100, i * 4);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < 150; ++i) {
 
-			particles[index].position = glm::vec2(550, i * 4);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
 		for (int i = 1; i < 150; ++i) {
 
 			particles[index].position = glm::vec2(50 * 4 + 100, (i + 50) * 4 + 50);
@@ -1275,6 +1256,21 @@ private:
 			particles[index].type = 0;
 			index++;
 		}
+		for (int i = 1; i < 50; ++i) {
+
+			particles[index].position = glm::vec2(-i * 4 + 550, i * 4 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 200; ++i) {
+
+			particles[index].position = glm::vec2(550, i * 4);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		
 		for (int i = 1; i < 150; ++i) {
 
 			particles[index].position = glm::vec2(-50 * 4 + 550, (i + 50) * 4 + 50);
@@ -1283,10 +1279,6 @@ private:
 			index++;
 		}
 
-		/*particles[0].position = glm::vec2(198, 100);
-		particles[0].lposition =  glm::vec2(198, 100);
-		particles[1].position =  glm::vec2(200, 100);
-		particles[1].lposition = glm::vec2(200, 100);*/
 
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
@@ -1689,8 +1681,8 @@ private:
 
 	void updateUniformBuffer() {
 		UniformBufferObject ubo{};
-		ubo.PDWidth = PDWIDTH;
-		ubo.PDHeight = PDHEIGHT;
+		ubo.width = WIDTH;
+		ubo.height = HEIGHT;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 	}
 
