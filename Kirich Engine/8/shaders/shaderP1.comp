@@ -1,0 +1,96 @@
+#version 450
+
+struct ParticleType{
+    float rmin;
+    float e;
+    float m;
+};
+
+layout (set = 0, binding = 0) uniform ParameterUBO {
+    ParticleType particleTypes[2];
+    int width;
+    int height;
+} ubo;
+
+struct Particle {
+	vec2 position;
+    vec2 lposition;
+    int type;
+};
+
+layout(std430, set = 1, binding = 0) readonly buffer ParticleSSBOIn {
+   Particle particlesIn[ ];
+};
+
+layout(std430, set = 1, binding = 1) buffer ParticleSSBOOut {
+   Particle particlesOut[ ];
+};
+
+layout(std430, set = 1, binding = 2) readonly buffer ParticleData {
+    uint data[ ];
+};
+
+//vec2 repeat(vec2 a){
+//    a.x = mod(a.x, ubo.width);
+//    a.y = mod(a.y, ubo.height);
+//
+//    return a;
+//
+//}
+
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+void main() 
+{
+    
+
+//    uint id = gl_GlobalInvocationID.x;  
+//    Particle currentParticle = particlesIn[id];
+//    ParticleType currentParticleType = ubo.particleTypes[currentParticle.type];
+//
+//    if (currentParticleType.m==0){
+//        particlesOut[id].lposition = currentParticle.lposition;
+//        particlesOut[id].position = currentParticle.position;
+//        particlesOut[id].type = currentParticle.type;
+//    
+//        return;
+//    }
+//
+//    vec2 F = vec2(0, 0);
+//
+//    for(int x=-10; x<=10; ++x){
+//        for(int y=-10; y<=10; ++y){
+//            if(x==0 && y==0) continue;
+//
+//            ivec2 pos = ivec2(currentParticle.position) + ivec2(x, y);
+//            uint index = data[pos.x * ubo.height + pos.y];
+//
+//            if(index != 0){
+//                Particle nextParticle = particlesIn[index - 1];
+//                ParticleType nextParticleType = ubo.particleTypes[nextParticle.type];
+//                float r = length(currentParticle.position - nextParticle.position);
+//
+//                if(r < 10){
+//                    float rmin = currentParticleType.rmin + nextParticleType.rmin;
+//                    float e = currentParticleType.e * nextParticleType.e;
+//
+//                    float f = 12 * e / r * (pow(rmin / r, 12) - pow(rmin / r, 6));
+//                    F += f * normalize(currentParticle.position - nextParticle.position);
+//                    if (nextParticle.type==0){
+//                        F-=(currentParticle.position - currentParticle.lposition)*rmin/length(currentParticle.position - nextParticle.position)/10;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    F += vec2(0,0.03);
+////    if (length(F)!=0){
+////        F = normalize(F) * min(length(F), 5000);
+////    }
+//    
+//    vec2 a = F / currentParticleType.m;
+//    particlesOut[id].lposition = repeat(currentParticle.position);
+//    particlesOut[id].position =  repeat(2*currentParticle.position - currentParticle.lposition + a);
+//    particlesOut[id].type = currentParticle.type;
+}

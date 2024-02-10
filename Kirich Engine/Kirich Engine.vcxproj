@@ -161,6 +161,10 @@
     <None Include="7\shaders\shaderP1.vert" />
     <None Include="7\shaders\shaderP2.comp" />
     <None Include="7\shaders\shaderP3.comp" />
+    <None Include="8\shaders\compile.bat" />
+    <None Include="8\shaders\shaderP1.comp" />
+    <None Include="8\shaders\shaderP1.frag" />
+    <None Include="8\shaders\shaderP1.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="1\main.cpp">
@@ -195,7 +199,11 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </DeploymentContent>
     </ClCompile>
-    <ClCompile Include="7\main.cpp" />
+    <ClCompile Include="7\main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="8\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
