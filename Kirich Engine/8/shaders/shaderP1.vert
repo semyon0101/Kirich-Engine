@@ -10,6 +10,7 @@ layout (set = 0, binding = 0) uniform ParameterUBO {
     ParticleType particleTypes[2];
     int width;
     int height;
+    int interaction;
 } ubo;
 
 layout(location = 0) in vec2 inPosition;
