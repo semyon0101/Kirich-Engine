@@ -37,9 +37,6 @@ const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
 
 const uint32_t PARTICLES_COUNT = 10000;
-const uint32_t PARTICLE_INTERACTION_COUNT = 4;
-const uint32_t PARTICLE_SPHERE_SIZE = 20;
-const uint32_t HASH_GRID_SIZE = 20;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -108,6 +105,26 @@ struct Particles {
 		return attributeDescriptions;
 	}
 };
+struct comp {
+	static int compar(const void* p1, const void* p2) {
+		int x1 = *(int*)p1;
+		int x2 = *(int*)p2;
+		int y1 = *((int*)p1+1);
+		int y2 = *((int*)p2+1);
+
+		if (y1 > y2) 
+			return 1;
+		if (y1 < y2)
+			return -1;
+		if (x1 > x2)
+			return 1;
+		if (x1 < x2)
+			return -1;
+
+		return 0;
+	}
+
+};
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsAndComputeFamily;
@@ -135,7 +152,7 @@ struct UniformBufferObject {
 	UniformBufferObjectParticleType particleParametrs[2] = { {10, 0.1f, 0}, {6, 1, 1000} };
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
-	alignas(4) int interaction = PARTICLE_INTERACTION_COUNT;
+	alignas(4) int particlesCount = PARTICLES_COUNT;
 
 };
 
@@ -217,7 +234,10 @@ private:
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> computeInFlightFences;
 
-	std::thread thread;
+	//std::thread thread;
+
+	std::vector<Particles> particles;
+	int sortedArray[PARTICLES_COUNT * 3] = { 0 };
 
 	uint32_t currentFrame = 0;
 
@@ -802,8 +822,8 @@ private:
 
 
 	void createGraphicsPipeline1() {
-		auto vertShaderCode = readFile("8/shaders/vertP1.spv");
-		auto fragShaderCode = readFile("8/shaders/fragP1.spv");
+		auto vertShaderCode = readFile("9/shaders/vertP1.spv");
+		auto fragShaderCode = readFile("9/shaders/fragP1.spv");
 
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
@@ -963,7 +983,7 @@ private:
 
 
 	void createComputePipeline1() {
-		auto computeShaderCode = readFile("8/shaders/compP1.spv");
+		auto computeShaderCode = readFile("9/shaders/compP1.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -1091,7 +1111,8 @@ private:
 
 
 	void createParticlesBuffers() {
-		std::vector<Particles> particles(PARTICLES_COUNT);
+		particles.resize(PARTICLES_COUNT);
+
 		std::mt19937 gen(0);
 		int index = 0;
 		std::uniform_real_distribution<> dist(0.1, 0.9);
@@ -1099,7 +1120,7 @@ private:
 
 			particles[i].position = glm::vec2(dist(gen) * width, dist(gen) * height);
 			particles[i].lposition = particles[i].position;
-			particles[index].type = 1;
+			particles[i].type = 1;
 		}
 
 
@@ -1210,6 +1231,12 @@ private:
 			index++;
 		}*/
 
+		for (int i = 0; i < PARTICLES_COUNT; i++)
+		{
+			sortedArray[i * 3] = int(particles[i].position.x);
+			sortedArray[i * 3 + 1] = int(particles[i].position.y);
+			sortedArray[i * 3 + 2] = i;
+		}
 
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
@@ -1229,7 +1256,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 				particlesBuffers[i], particlesBuffersMemory[i]);
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
 			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
@@ -1284,7 +1311,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * 3;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1419,7 +1446,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLES_COUNT * 3;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1617,71 +1644,25 @@ private:
 		UniformBufferObject ubo{};
 		ubo.width = WIDTH;
 		ubo.height = HEIGHT;
-		ubo.interaction = PARTICLE_INTERACTION_COUNT;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
-		std::vector<Particles> particles(PARTICLES_COUNT);
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
-
 		memcpy(particles.data(), particlesBuffersMapped[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
 
-		std::unordered_map<glm::ivec2, std::vector<int>> map;
 		for (int i = 0; i < PARTICLES_COUNT; i++)
 		{
-			glm::ivec2 loc = glm::ivec2(particles[i].position.x / HASH_GRID_SIZE, particles[i].position.y / HASH_GRID_SIZE);
-			map[loc].push_back(i + 1);
+			int index = sortedArray[i * 3 + 2];
+			sortedArray[i * 3] = int(particles[index].position.x);
+			sortedArray[i * 3 + 1] = int(particles[index].position.y);
 		}
 
-		int min[PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT] = { 0 };
-		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+		std::qsort(sortedArray, PARTICLES_COUNT, sizeof(int) * 3, comp::compar);
+		
+		char sd = '1';
+		std::cin >> sd;
 
-		for (int i = 0; i < PARTICLES_COUNT; i++) {
-			glm::ivec2 loc = glm::ivec2(particles[i].position.x / HASH_GRID_SIZE, particles[i].position.y / HASH_GRID_SIZE);
-			for (int x = -1; x < 1; x++)
-			{
-				for (int y = -1; y < 1; y++) {
-					Particles* p1 = &particles[i];
-					for (int elem : map[loc+glm::ivec2(x,y)]) {
-						if (elem - 1 == i) continue;
-						AddToVector(&min[i * PARTICLE_INTERACTION_COUNT], elem, p1, particles);
-					}
-				}
-			}
-
-
-		}
-		//std::cout<<  min[0]<<" "<<min[1] << " " << min[2] << " " << min[3] << " " << min[4] << " " << min[5] << " " << min[6] << " " << min[7] << std::endl;
-		memcpy(particlesDataBuffersMapped[currentFrame], min, bufferSize1);
-	}
-
-	void AddToVector(int* min, int elem, Particles* p1, std::vector<Particles>& particles) {
-		Particles* p2 = &particles[elem - 1];
-		int len = lenght(p1, p2);
-		if (len > PARTICLE_SPHERE_SIZE) return;
-		for (int i = 0; i < PARTICLE_INTERACTION_COUNT; i++)
-		{
-			int index = min[i];
-			if (index == 0) {
-				min[i] = elem;
-				return;
-			}
-			Particles* p3 = &particles[index - 1];
-			int len1 = lenght(p1, p3);
-			if (len < len1) {
-				for (int j = i + 1; j < PARTICLE_INTERACTION_COUNT; j++) {
-					min[j] = min[j - 1];
-				}
-
-				min[i] = elem;
-				return;
-			}
-
-
-		}
-	}
-	int lenght(Particles* p1, Particles* p2) {
-
-		return ((*p1).position - (*p2).position).length();
+		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLES_COUNT * 3;
+		memcpy(particlesDataBuffersMapped[currentFrame], sortedArray, bufferSize1);
 	}
 
 	void recordComputeCommandBuffer(VkCommandBuffer commandBuffer) {
@@ -1849,7 +1830,7 @@ private:
 int main() {
 
 #ifdef _DEBUG
-	system("8\\shaders\\compile.bat");
+	system("9\\shaders\\compile.bat");
 #endif
 	App app;
 
