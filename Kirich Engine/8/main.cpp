@@ -36,7 +36,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
 
-const uint32_t PARTICLES_COUNT = 10000;
+const uint32_t PARTICLE_COUNT = 10000;
 const uint32_t PARTICLE_INTERACTION_COUNT = 4;
 const uint32_t PARTICLE_SPHERE_SIZE = 20;
 const uint32_t HASH_GRID_SIZE = 20;
@@ -1091,11 +1091,11 @@ private:
 
 
 	void createParticlesBuffers() {
-		std::vector<Particles> particles(PARTICLES_COUNT);
+		std::vector<Particles> particles(PARTICLE_COUNT);
 		std::mt19937 gen(0);
 		int index = 0;
 		std::uniform_real_distribution<> dist(0.1, 0.9);
-		for (int i = 0; i < PARTICLES_COUNT; ++i) {
+		for (int i = 0; i < PARTICLE_COUNT; ++i) {
 
 			particles[i].position = glm::vec2(dist(gen) * width, dist(gen) * height);
 			particles[i].lposition = particles[i].position;
@@ -1212,7 +1212,7 @@ private:
 
 
 
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
+		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1284,7 +1284,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLE_COUNT * PARTICLE_INTERACTION_COUNT;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1393,7 +1393,7 @@ private:
 			VkDescriptorBufferInfo  particlesBufferInfoLastFrame{};
 			particlesBufferInfoLastFrame.buffer = particlesBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			particlesBufferInfoLastFrame.offset = 0;
-			particlesBufferInfoLastFrame.range = sizeof(Particles) * PARTICLES_COUNT;
+			particlesBufferInfoLastFrame.range = sizeof(Particles) * PARTICLE_COUNT;
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = particlesDescriptorSets[i];
@@ -1406,7 +1406,7 @@ private:
 			VkDescriptorBufferInfo particlesBufferInfoCurrentFrame{};
 			particlesBufferInfoCurrentFrame.buffer = particlesBuffers[i];
 			particlesBufferInfoCurrentFrame.offset = 0;
-			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * PARTICLES_COUNT;
+			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * PARTICLE_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = particlesDescriptorSets[i];
@@ -1419,7 +1419,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLE_COUNT * PARTICLE_INTERACTION_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1620,22 +1620,22 @@ private:
 		ubo.interaction = PARTICLE_INTERACTION_COUNT;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
-		std::vector<Particles> particles(PARTICLES_COUNT);
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
+		std::vector<Particles> particles(PARTICLE_COUNT);
+		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
 
 		memcpy(particles.data(), particlesBuffersMapped[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
 
 		std::unordered_map<glm::ivec2, std::vector<int>> map;
-		for (int i = 0; i < PARTICLES_COUNT; i++)
+		for (int i = 0; i < PARTICLE_COUNT; i++)
 		{
 			glm::ivec2 loc = glm::ivec2(particles[i].position.x / HASH_GRID_SIZE, particles[i].position.y / HASH_GRID_SIZE);
 			map[loc].push_back(i + 1);
 		}
 
-		int min[PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT] = { 0 };
-		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLES_COUNT * PARTICLE_INTERACTION_COUNT;
+		int min[PARTICLE_COUNT * PARTICLE_INTERACTION_COUNT] = { 0 };
+		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLE_COUNT * PARTICLE_INTERACTION_COUNT;
 
-		for (int i = 0; i < PARTICLES_COUNT; i++) {
+		for (int i = 0; i < PARTICLE_COUNT; i++) {
 			glm::ivec2 loc = glm::ivec2(particles[i].position.x / HASH_GRID_SIZE, particles[i].position.y / HASH_GRID_SIZE);
 			for (int x = -1; x < 1; x++)
 			{
@@ -1695,7 +1695,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLE_COUNT, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -1751,7 +1751,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &particlesBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, PARTICLES_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 

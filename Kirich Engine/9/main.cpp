@@ -33,10 +33,11 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const uint32_t WIDTH = 1280;
-const uint32_t HEIGHT = 720;
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 800;
 
-const uint32_t PARTICLES_COUNT = 10000;
+const uint32_t PARTICLE_COUNT = 50000;
+const uint32_t PARTICLE_DIVISION = 30;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -109,10 +110,10 @@ struct comp {
 	static int compar(const void* p1, const void* p2) {
 		int x1 = *(int*)p1;
 		int x2 = *(int*)p2;
-		int y1 = *((int*)p1+1);
-		int y2 = *((int*)p2+1);
+		int y1 = *((int*)p1 + 1);
+		int y2 = *((int*)p2 + 1);
 
-		if (y1 > y2) 
+		if (y1 > y2)
 			return 1;
 		if (y1 < y2)
 			return -1;
@@ -149,10 +150,11 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[2] = { {10, 0.1f, 0}, {6, 1, 1000} };
+	UniformBufferObjectParticleType particleParametrs[2] = { {0, 1, 0}, {10, 1, 1000} };
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
-	alignas(4) int particlesCount = PARTICLES_COUNT;
+	alignas(4) int particleCount = PARTICLE_COUNT;
+	alignas(4) int particleDivision = PARTICLE_DIVISION;
 
 };
 
@@ -237,7 +239,7 @@ private:
 	//std::thread thread;
 
 	std::vector<Particles> particles;
-	int sortedArray[PARTICLES_COUNT * 3] = { 0 };
+	int sortedArray[PARTICLE_COUNT * 3] = { 0 };
 
 	uint32_t currentFrame = 0;
 
@@ -1111,20 +1113,20 @@ private:
 
 
 	void createParticlesBuffers() {
-		particles.resize(PARTICLES_COUNT);
+		particles.resize(PARTICLE_COUNT);
 
 		std::mt19937 gen(0);
 		int index = 0;
-		std::uniform_real_distribution<> dist(0.1, 0.9);
-		for (int i = 0; i < PARTICLES_COUNT; ++i) {
+		/*std::uniform_real_distribution<> dist(0.1, 0.9);
+		for (int i = 0; i < PARTICLE_COUNT; ++i) {
 
 			particles[i].position = glm::vec2(dist(gen) * width, dist(gen) * height);
 			particles[i].lposition = particles[i].position;
 			particles[i].type = 1;
-		}
+		}*/
 
 
-		//std::uniform_real_distribution<> dist(-1, 1);
+		std::uniform_real_distribution<> dist(-1, 1);
 
 		/*for (int i = 0; i < 20; ++i) {
 			for (int j = 0; j < 20; ++j) {
@@ -1147,15 +1149,23 @@ private:
 		}*/
 
 
-		/*for (int i = 0; i < 30; ++i) {
-			for (int j = 0; j < 30; ++j) {
-				particles[index].position = glm::vec2(250 + i * 20, 20 + j * 20);
-				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 10; ++j) {
+				particles[index].position = glm::vec2(50 + i *19, 50 + j * 19);
+				particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 				particles[index].type = 1;
 				index++;
 			}
-		}*/
+		}
+		//particles[index].position = glm::vec2(50, 50);
+		//particles[index].lposition = particles[index].position+glm::vec2(-0.1,0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//particles[index].type = 1;
+		//index++;
 
+		//particles[index].position = glm::vec2(100, 50);
+		//particles[index].lposition = particles[index].position + glm::vec2(0, 0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//particles[index].type = 1;
+		//index++;
 
 		/*for (int i = 1; i < WIDTH / 4; ++i) {
 
@@ -1231,15 +1241,17 @@ private:
 			index++;
 		}*/
 
-		for (int i = 0; i < PARTICLES_COUNT; i++)
+		for (int i = 0; i < PARTICLE_COUNT; i++)
 		{
-			sortedArray[i * 3] = int(particles[i].position.x);
-			sortedArray[i * 3 + 1] = int(particles[i].position.y);
+			sortedArray[i * 3] = int(particles[i].position.x / PARTICLE_DIVISION);
+			sortedArray[i * 3 + 1] = int(particles[i].position.y / PARTICLE_DIVISION);
 			sortedArray[i * 3 + 2] = i;
 		}
 
+		std::qsort(sortedArray, PARTICLE_COUNT, sizeof(int) * 3, comp::compar);
 
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
+
+		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1311,7 +1323,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLES_COUNT * 3;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLE_COUNT * 3;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1322,6 +1334,7 @@ private:
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 				particlesDataBuffers[i], particlesDataBuffersMemory[i]);
 			vkMapMemory(device, particlesDataBuffersMemory[i], 0, bufferSize, 0, &particlesDataBuffersMapped[i]);
+			memcpy(particlesDataBuffersMapped[i], sortedArray, bufferSize);
 		}
 	}
 
@@ -1420,7 +1433,7 @@ private:
 			VkDescriptorBufferInfo  particlesBufferInfoLastFrame{};
 			particlesBufferInfoLastFrame.buffer = particlesBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			particlesBufferInfoLastFrame.offset = 0;
-			particlesBufferInfoLastFrame.range = sizeof(Particles) * PARTICLES_COUNT;
+			particlesBufferInfoLastFrame.range = sizeof(Particles) * PARTICLE_COUNT;
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = particlesDescriptorSets[i];
@@ -1433,7 +1446,7 @@ private:
 			VkDescriptorBufferInfo particlesBufferInfoCurrentFrame{};
 			particlesBufferInfoCurrentFrame.buffer = particlesBuffers[i];
 			particlesBufferInfoCurrentFrame.offset = 0;
-			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * PARTICLES_COUNT;
+			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * PARTICLE_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = particlesDescriptorSets[i];
@@ -1446,7 +1459,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLES_COUNT * 3;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLE_COUNT * 3;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1646,22 +1659,22 @@ private:
 		ubo.height = HEIGHT;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLES_COUNT;
+		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
 		memcpy(particles.data(), particlesBuffersMapped[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
 
-		for (int i = 0; i < PARTICLES_COUNT; i++)
+		for (int i = 0; i < PARTICLE_COUNT; i++)
 		{
 			int index = sortedArray[i * 3 + 2];
-			sortedArray[i * 3] = int(particles[index].position.x);
-			sortedArray[i * 3 + 1] = int(particles[index].position.y);
+			sortedArray[i * 3] = int(particles[index].position.x/PARTICLE_DIVISION);
+			sortedArray[i * 3 + 1] = int(particles[index].position.y/PARTICLE_DIVISION);
 		}
 
-		std::qsort(sortedArray, PARTICLES_COUNT, sizeof(int) * 3, comp::compar);
-		
-		char sd = '1';
-		std::cin >> sd;
+		std::qsort(sortedArray, PARTICLE_COUNT, sizeof(int) * 3, comp::compar);
 
-		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLES_COUNT * 3;
+		/*char sd = '1';
+		std::cin >> sd;*/
+
+		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLE_COUNT * 3;
 		memcpy(particlesDataBuffersMapped[currentFrame], sortedArray, bufferSize1);
 	}
 
@@ -1676,7 +1689,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLES_COUNT, 1, 1);
+		vkCmdDispatch(commandBuffer, PARTICLE_COUNT, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -1732,7 +1745,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &particlesBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, PARTICLES_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
