@@ -36,8 +36,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
 
-const uint32_t PARTICLE_COUNT = 50000;
-const uint32_t PARTICLE_DIVISION = 30;
+const uint32_t PARTICLE_COUNT = 1000;
+const uint32_t PARTICLE_DIVISION = 1000;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -150,7 +150,7 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[2] = { {0, 1, 0}, {10, 1, 1000} };
+	UniformBufferObjectParticleType particleParametrs[2] = { {0, 1, 0}, {10, 1, 10000} };
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
 	alignas(4) int particleCount = PARTICLE_COUNT;
@@ -1149,14 +1149,17 @@ private:
 		}*/
 
 
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 10; ++j) {
-				particles[index].position = glm::vec2(50 + i *19, 50 + j * 19);
+		for (int i = 0; i < 30; ++i) {
+			for (int j = 0; j < 30; ++j) {
+				particles[index].position = glm::vec2(51 + i *19, 51 + j * 19);
 				particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 				particles[index].type = 1;
 				index++;
 			}
 		}
+
+		
+
 		//particles[index].position = glm::vec2(50, 50);
 		//particles[index].lposition = particles[index].position+glm::vec2(-0.1,0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 		//particles[index].type = 1;
@@ -1240,6 +1243,7 @@ private:
 			particles[index].type = 0;
 			index++;
 		}*/
+		
 
 		for (int i = 0; i < PARTICLE_COUNT; i++)
 		{
