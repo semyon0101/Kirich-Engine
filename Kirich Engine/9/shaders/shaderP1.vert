@@ -21,7 +21,8 @@ layout(location = 0) out float densesy;
 
 void main() {
     
-    gl_PointSize = ubo.particleTypes[uint(inType)].rmin;
+    gl_PointSize = ubo.particleTypes[uint(inType)].rmin*1.5;
     gl_Position = vec4((inPosition - vec2(ubo.width, ubo.height) / 2) / vec2(ubo.width, ubo.height) * 2, 0, 1);
     densesy = length(inPosition-inLPosition)*10;
+    densesy=1;
 }

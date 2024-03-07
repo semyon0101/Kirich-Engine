@@ -7,6 +7,6 @@ void main() {
     
 
     float a = (0.5-length(gl_PointCoord-0.5));
-    a=int(a+0.9999999);
+    a=ceil(a);
     outColor = vec4(1, densesy, densesy, a);
 }

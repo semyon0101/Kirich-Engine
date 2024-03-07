@@ -36,8 +36,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
 
-const uint32_t PARTICLE_COUNT = 1000;
-const uint32_t PARTICLE_DIVISION = 1000;
+const uint32_t PARTICLE_COUNT = 7000;
+const uint32_t PARTICLE_DIVISION = 16;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -150,7 +150,7 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[2] = { {0, 1, 0}, {10, 1, 10000} };
+	UniformBufferObjectParticleType particleParametrs[2] = { {5, 1, 0}, {3, 1, 1000} };
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
 	alignas(4) int particleCount = PARTICLE_COUNT;
@@ -1149,10 +1149,10 @@ private:
 		}*/
 
 
-		for (int i = 0; i < 30; ++i) {
-			for (int j = 0; j < 30; ++j) {
-				particles[index].position = glm::vec2(51 + i *19, 51 + j * 19);
-				particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		for (int i = 0; i < 35; ++i) {
+			for (int j = 0; j < 20; ++j) {
+				particles[index].position = glm::vec2(220 + i * 6, 20 + j * 6);
+				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
 				particles[index].type = 1;
 				index++;
 			}
@@ -1170,79 +1170,79 @@ private:
 		//particles[index].type = 1;
 		//index++;
 
-		/*for (int i = 1; i < WIDTH / 4; ++i) {
+		/*for (int i = 1; i < WIDTH / 5; ++i) {
 
-			particles[index].position = glm::vec2(i * 4, 10);
+			particles[index].position = glm::vec2(i * 5, 10);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < WIDTH / 4; ++i) {
+		for (int i = 1; i < HEIGHT / 5; ++i) {
 
-			particles[index].position = glm::vec2(i * 4, HEIGHT - 10);
+			particles[index].position = glm::vec2(10, i * 5);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}
-		for (int i = 1; i < HEIGHT / 4; ++i) {
+		for (int i = 1; i < HEIGHT / 5; ++i) {
 
-			particles[index].position = glm::vec2(10, i * 4);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < HEIGHT / 4; ++i) {
-
-			particles[index].position = glm::vec2(WIDTH - 10, i * 4);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-
-		for (int i = 1; i < 50; ++i) {
-
-			particles[index].position = glm::vec2(i * 4 + 100, i * 4 + 50);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < 200; ++i) {
-
-			particles[index].position = glm::vec2(100, i * 4);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-
-		for (int i = 1; i < 150; ++i) {
-
-			particles[index].position = glm::vec2(50 * 4 + 100, (i + 50) * 4 + 50);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < 50; ++i) {
-
-			particles[index].position = glm::vec2(-i * 4 + 550, i * 4 + 50);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < 200; ++i) {
-
-			particles[index].position = glm::vec2(550, i * 4);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-
-		for (int i = 1; i < 150; ++i) {
-
-			particles[index].position = glm::vec2(-50 * 4 + 550, (i + 50) * 4 + 50);
+			particles[index].position = glm::vec2(WIDTH - 10, i * 5);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
 		}*/
+		for (int i = 1; i < WIDTH / 5; ++i) {
+
+			particles[index].position = glm::vec2(i * 5, HEIGHT - 10);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+
+		for (int i = 1; i <= 40; ++i) {
+
+			particles[index].position = glm::vec2(i * 5 + 100, i * 5 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 160; ++i) {
+
+			particles[index].position = glm::vec2(100, i * 5);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+
+		for (int i = 1; i < 120; ++i) {
+
+			particles[index].position = glm::vec2(40 * 5 + 100, (i + 40) * 5 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i <= 40; ++i) {
+
+			particles[index].position = glm::vec2(-i * 5 + 550, i * 5 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+		for (int i = 1; i < 160; ++i) {
+
+			particles[index].position = glm::vec2(550, i * 5);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
+
+		for (int i = 1; i < 120; ++i) {
+
+			particles[index].position = glm::vec2(-40 * 5 + 550, (i + 40) * 5 + 50);
+			particles[index].lposition = particles[index].position;
+			particles[index].type = 0;
+			index++;
+		}
 		
 
 		for (int i = 0; i < PARTICLE_COUNT; i++)
