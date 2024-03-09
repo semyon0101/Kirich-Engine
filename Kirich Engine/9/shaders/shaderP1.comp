@@ -32,53 +32,47 @@ layout(std430, set = 1, binding = 2) readonly buffer ParticleData {
     int data[ ];
 };
 
-int compar(int x1, int y1, int x2, int y2){
+int compar(int _x1, int _y1, int _x2, int _y2){
     
-    if (y1 > y2) 
+    if (_y1 > _y2) 
     	return 1;
-    if (y1 < y2)
+    if (_y1 < _y2)
     	return -1;
-    if (x1 > x2)
+    if (_x1 > _x2)
     	return 1;
-    if (x1 < x2)
+    if (_x1 < _x2)
     	return -1;
     
     return 0;
 
 }
 
-int find(int x, int y){
-    int minIndex=0;
-    int maxIndex=ubo.particleCount-1;
-    while(true){
-        if((maxIndex-minIndex)<=1) {
-            return minIndex;
-        
-        }
+int find(int _x, int _y){
+    int minIndex = 0;
+    int maxIndex = ubo.particleCount-1;
+    while((maxIndex - minIndex)>1){
         int index = int((minIndex + maxIndex) / 2.0);
-        if (compar(x, y, data[index*3], data[index*3+1]) > 0){
-            minIndex = index;
-        }else{
-            maxIndex = index;
-        }
+
+        if (compar(_x, _y, data[index * 3], data[index * 3 + 1]) > 0) minIndex = index;
+        else maxIndex = index;
     }
-    return -1;  
+    return minIndex;  
 }
 
 vec2 calculate(Particle p1, ParticleType pt1, Particle p2, ParticleType pt2){
+    vec2 f=vec2(0);
     float r = length(p1.position - p2.position);
-    if(r < 15){
+    if(r < ubo.particleDivision){
         float rmin = pt1.rmin + pt2.rmin;
         float e = pt1.e * pt2.e;
                 
-        vec2 f = (12 * e /r * (pow(rmin / r, 12) - pow(rmin / r, 6))) * normalize(p1.position - p2.position);
-        if (p2.type==0){
-            f-=(p1.position - p1.lposition)*rmin/length(p1.position - p2.position)/100;
-        }
-        return f;
+        f = (12 * e / r * (pow(rmin / r, 12) - pow(rmin / r, 6))) * normalize(p1.position - p2.position);
+//        if (p2.type==0){
+//            f-=(p1.position - p1.lposition)*rmin/r/100;
+//        }
                 
     }
-    return vec2(0);
+    return f;
 }
 
 
@@ -89,56 +83,57 @@ void main()
     uint id = gl_GlobalInvocationID.x;
     Particle currentParticle = particlesIn[id];
     ParticleType currentParticleType = ubo.particleTypes[currentParticle.type];
-    
-    particlesOut[id].lposition = currentParticle.lposition;
-    particlesOut[id].position = currentParticle.position;
-    particlesOut[id].type = currentParticle.type;
 
     if (currentParticle.type==0){
+        particlesOut[id].lposition = currentParticle.lposition;
+        particlesOut[id].position = currentParticle.position;
+        particlesOut[id].type = currentParticle.type;
         return;
     }
 
     vec2 F = vec2(0, 0);
 
-    if(false){
-        int id1=-1;
-        while (id1<ubo.particleCount){
-            id1+=1;
+//    int id1=-1;
+//    while (id1<ubo.particleCount){
+//        id1+=1;
+//        if (id1==id)continue;
+//
+//        Particle secondParticle = particlesIn[id1];
+//        ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
+//
+//        F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
+//            
+//    }
+    for(int y=-1; y<=1; y++){
+        int _x = int(ceil(currentParticle.position.x / ubo.particleDivision));
+        int _y = int(ceil(currentParticle.position.y / ubo.particleDivision)) + y;
+
+        int index = find(_x - 1, _y);
+        while (index<ubo.particleCount){
+            int _x1 = data[index * 3];
+            int _y1 = data[index * 3 + 1];
+
+            if ((_x + 1 < _x1) && (_y == _y1)) break;
+            else if (_y < _y1) break;
+            else if(_y > _y1){
+                index+=1;
+                continue;
+            }
+
+            uint id1 = data[index * 3 + 2];
+            index+=1;
+
             if (id1==id)continue;
 
             Particle secondParticle = particlesIn[id1];
             ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
 
             F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
-            
         }
-    }
-    else{
-        for(int y=-1; y<=1; y++){
-            int index = find(int(currentParticle.position.x / ubo.particleDivision) - 1, int(currentParticle.position.y / ubo.particleDivision) + y);
-            while ((index<ubo.particleCount)){
-                if ((int(currentParticle.position.x / ubo.particleDivision) + 1 < data[index*3]) &&
-                    (int(currentParticle.position.y / ubo.particleDivision) + y == data[index*3 + 1])) break;
-                else if (int(currentParticle.position.y / ubo.particleDivision) + y < data[index*3 + 1]) break;
-                else if(int(currentParticle.position.y / ubo.particleDivision) + y > data[index*3 + 1]){
-                    index+=1;
-                    continue;
-                }
-
-                uint id1 = data[index*3+2];
-                index+=1;
-
-                if (id1==id)continue;
-
-                Particle secondParticle = particlesIn[id1];
-                ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
-
-                F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
-            }
-        }
+        
     }
 
-    F += vec2(0,0.01);
+    //F += vec2(0,0.01);
     //F-=(currentParticle.position - currentParticle.lposition);
 //    if (length(F)>50){
 //        F = normalize(F) * 50;

@@ -36,8 +36,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
 
-const uint32_t PARTICLE_COUNT = 7000;
-const uint32_t PARTICLE_DIVISION = 16;
+const uint32_t PARTICLE_COUNT = 10000;
+const uint32_t PARTICLE_DIVISION = 36; // rmin * 4.4
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -150,10 +150,10 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[2] = { {5, 1, 0}, {3, 1, 1000} };
+	UniformBufferObjectParticleType particleParametrs[2] = { {5, 1, 0}, {8, 1, 1000} };
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
-	alignas(4) int particleCount = PARTICLE_COUNT;
+	alignas(4) int particleCount = 0;
 	alignas(4) int particleDivision = PARTICLE_DIVISION;
 
 };
@@ -232,13 +232,13 @@ private:
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
-	std::vector<VkSemaphore> computeFinishedSemaphores;
-	std::vector<VkFence> inFlightFences;
+	std::vector<VkFence> graphicsInFlightFences;
 	std::vector<VkFence> computeInFlightFences;
 
 	//std::thread thread;
 
 	std::vector<Particles> particles;
+	int particlesInUse = 0;
 	int sortedArray[PARTICLE_COUNT * 3] = { 0 };
 
 	uint32_t currentFrame = 0;
@@ -1149,23 +1149,26 @@ private:
 		}*/
 
 
-		for (int i = 0; i < 35; ++i) {
-			for (int j = 0; j < 20; ++j) {
-				particles[index].position = glm::vec2(220 + i * 6, 20 + j * 6);
-				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
+		for (int i = 0; i < 30; ++i) {
+			for (int j = 0; j < 30; ++j) {
+				float rmin = 8;
+				particles[index].position = glm::vec2(220 + i * rmin * 2, 20 + j * rmin * std::pow(3, 0.5));
+				if (j % 2 == 0)particles[index].position.x += rmin;
+				particles[index].lposition = particles[index].position +glm::vec2(dist(gen) / 1000, dist(gen) / 1000);
 				particles[index].type = 1;
 				index++;
 			}
 		}
 
-		
+
+
 
 		//particles[index].position = glm::vec2(50, 50);
-		//particles[index].lposition = particles[index].position+glm::vec2(-0.1,0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//particles[index].lposition = particles[index].position+glm::vec2(0,-0.01);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 		//particles[index].type = 1;
 		//index++;
 
-		//particles[index].position = glm::vec2(100, 50);
+		//particles[index].position = glm::vec2(50, 100);
 		//particles[index].lposition = particles[index].position + glm::vec2(0, 0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
 		//particles[index].type = 1;
 		//index++;
@@ -1191,15 +1194,15 @@ private:
 			particles[index].type = 0;
 			index++;
 		}*/
-		for (int i = 1; i < WIDTH / 5; ++i) {
+		/*for (int i = 1; i < WIDTH / 5; ++i) {
 
 			particles[index].position = glm::vec2(i * 5, HEIGHT - 10);
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
-		}
+		}*/
 
-		for (int i = 1; i <= 40; ++i) {
+		/*for (int i = 1; i <= 40; ++i) {
 
 			particles[index].position = glm::vec2(i * 5 + 100, i * 5 + 50);
 			particles[index].lposition = particles[index].position;
@@ -1242,17 +1245,17 @@ private:
 			particles[index].lposition = particles[index].position;
 			particles[index].type = 0;
 			index++;
-		}
-		
+		}*/
 
-		for (int i = 0; i < PARTICLE_COUNT; i++)
+		particlesInUse = index;
+
+		for (int i = 0; i < particlesInUse; i++)
 		{
-			sortedArray[i * 3] = int(particles[i].position.x / PARTICLE_DIVISION);
-			sortedArray[i * 3 + 1] = int(particles[i].position.y / PARTICLE_DIVISION);
+			sortedArray[i * 3] = int(std::ceil(particles[i].position.x / PARTICLE_DIVISION));
+			sortedArray[i * 3 + 1] = int(std::ceil(particles[i].position.y / PARTICLE_DIVISION));
 			sortedArray[i * 3 + 2] = i;
 		}
-
-		std::qsort(sortedArray, PARTICLE_COUNT, sizeof(int) * 3, comp::compar);
+		std::qsort(sortedArray, particlesInUse, sizeof(int) * 3, comp::compar);
 
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
@@ -1512,8 +1515,7 @@ private:
 	void createSyncObjects() {
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		computeFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+		graphicsInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 		computeInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
@@ -1526,11 +1528,10 @@ private:
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+				vkCreateFence(device, &fenceInfo, nullptr, &graphicsInFlightFences[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create graphics synchronization objects for a frame!");
 			}
-			if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &computeFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(device, &fenceInfo, nullptr, &computeInFlightFences[i]) != VK_SUCCESS) {
+			if (vkCreateFence(device, &fenceInfo, nullptr, &computeInFlightFences[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create compute synchronization objects for a frame!");
 			}
 		}
@@ -1573,34 +1574,29 @@ private:
 	}
 
 	void drawFrame() {
-
-		vkWaitForFences(device, 1, &inFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
 		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
+
+		updateBuffers();
 
 
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 
-		updateBuffers();
-
 		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
 		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &computeCommandBuffers[currentFrame];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &computeFinishedSemaphores[currentFrame];
+		VkSubmitInfo submitInfoComp{};
+		submitInfoComp.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfoComp.commandBufferCount = 1;
+		submitInfoComp.pCommandBuffers = &computeCommandBuffers[currentFrame];
 
-		if (vkQueueSubmit(computeQueue, 1, &submitInfo, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(computeQueue, 1, &submitInfoComp, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit compute command buffer!");
 		};
 
 
-
-		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &inFlightFences[currentFrame]);
+		vkWaitForFences(device, 1, &graphicsInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkResetFences(device, 1, &graphicsInFlightFences[currentFrame]);
 
 		uint32_t imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1613,23 +1609,24 @@ private:
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
+
 		vkResetCommandBuffer(graphicsCommandBuffers[currentFrame], 0);
 		recordGraphicsCommandBuffer(graphicsCommandBuffers[currentFrame], imageIndex);
 
-		VkSemaphore waitSemaphores[] = { computeFinishedSemaphores[currentFrame], imageAvailableSemaphores[currentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 2;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &graphicsCommandBuffers[currentFrame];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
+		VkSubmitInfo submitInfoGraph{};
+		submitInfoGraph.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfoGraph.waitSemaphoreCount = 1;
+		submitInfoGraph.pWaitSemaphores = waitSemaphores;
+		submitInfoGraph.pWaitDstStageMask = waitStages;
+		submitInfoGraph.commandBufferCount = 1;
+		submitInfoGraph.pCommandBuffers = &graphicsCommandBuffers[currentFrame];
+		submitInfoGraph.signalSemaphoreCount = 1;
+		submitInfoGraph.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
 
-		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfoGraph, graphicsInFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 
@@ -1654,6 +1651,7 @@ private:
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
+
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
@@ -1661,24 +1659,25 @@ private:
 		UniformBufferObject ubo{};
 		ubo.width = WIDTH;
 		ubo.height = HEIGHT;
+		ubo.particleCount = particlesInUse;
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
+		VkDeviceSize bufferSize = sizeof(Particles) * particlesInUse;
 		memcpy(particles.data(), particlesBuffersMapped[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
 
-		for (int i = 0; i < PARTICLE_COUNT; i++)
+		for (int i = 0; i < particlesInUse; i++)
 		{
 			int index = sortedArray[i * 3 + 2];
-			sortedArray[i * 3] = int(particles[index].position.x/PARTICLE_DIVISION);
-			sortedArray[i * 3 + 1] = int(particles[index].position.y/PARTICLE_DIVISION);
+			sortedArray[i * 3] = int(std::ceil(particles[index].position.x / PARTICLE_DIVISION));
+			sortedArray[i * 3 + 1] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
 		}
 
-		std::qsort(sortedArray, PARTICLE_COUNT, sizeof(int) * 3, comp::compar);
+		std::qsort(sortedArray, particlesInUse, sizeof(int) * 3, comp::compar);
 
 		/*char sd = '1';
 		std::cin >> sd;*/
 
-		VkDeviceSize bufferSize1 = sizeof(int) * PARTICLE_COUNT * 3;
+		VkDeviceSize bufferSize1 = sizeof(int) * particlesInUse * 3;
 		memcpy(particlesDataBuffersMapped[currentFrame], sortedArray, bufferSize1);
 	}
 
@@ -1693,7 +1692,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, PARTICLE_COUNT, 1, 1);
+		vkCmdDispatch(commandBuffer, particlesInUse, 1, 1);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record compute command buffer!");
@@ -1749,7 +1748,7 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &particlesBuffers[currentFrame], offsets);
 
-			vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
+			vkCmdDraw(commandBuffer, particlesInUse, 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1809,7 +1808,7 @@ private:
 			vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
 
-			vkDestroyFence(device, inFlightFences[i], nullptr);
+			vkDestroyFence(device, graphicsInFlightFences[i], nullptr);
 			vkDestroyFence(device, computeInFlightFences[i], nullptr);
 		}
 
