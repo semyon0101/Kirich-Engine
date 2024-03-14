@@ -824,8 +824,8 @@ private:
 
 
 	void createGraphicsPipeline1() {
-		auto vertShaderCode = readFile("9/shaders/vertP1.spv");
-		auto fragShaderCode = readFile("9/shaders/fragP1.spv");
+		auto vertShaderCode = readFile("10/shaders/vertP1.spv");
+		auto fragShaderCode = readFile("10/shaders/fragP1.spv");
 
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
@@ -985,7 +985,7 @@ private:
 
 
 	void createComputePipeline1() {
-		auto computeShaderCode = readFile("9/shaders/compP1.spv");
+		auto computeShaderCode = readFile("10/shaders/compP1.spv");
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -1886,7 +1886,7 @@ private:
 int main() {
 
 #ifdef _DEBUG
-	system("9\\shaders\\compile.bat");
+	system("10\\shaders\\compile.bat");
 #endif
 	App app;
 

@@ -52,6 +52,12 @@
     <Filter Include="Исходные файлы\9\shaders">
       <UniqueIdentifier>{482eac6e-2495-4f44-ac62-ad705bf34f2f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Исходные файлы\10">
+      <UniqueIdentifier>{26d85e01-e475-4f49-a2bb-c7c5b84bdeab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\10\shaders">
+      <UniqueIdentifier>{ec1a4550-ff7f-4c27-a7fd-7d1c3f1863a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
@@ -123,6 +129,18 @@
     <None Include="9\shaders\shaderP1.vert">
       <Filter>Исходные файлы\9\shaders</Filter>
     </None>
+    <None Include="10\shaders\compile.bat">
+      <Filter>Исходные файлы\10\shaders</Filter>
+    </None>
+    <None Include="10\shaders\shaderP1.comp">
+      <Filter>Исходные файлы\10\shaders</Filter>
+    </None>
+    <None Include="10\shaders\shaderP1.frag">
+      <Filter>Исходные файлы\10\shaders</Filter>
+    </None>
+    <None Include="10\shaders\shaderP1.vert">
+      <Filter>Исходные файлы\10\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="1\main.cpp">
@@ -151,6 +169,9 @@
     </ClCompile>
     <ClCompile Include="9\main.cpp">
       <Filter>Исходные файлы\9</Filter>
+    </ClCompile>
+    <ClCompile Include="10\main.cpp">
+      <Filter>Исходные файлы\10</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

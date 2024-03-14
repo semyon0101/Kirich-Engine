@@ -147,6 +147,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
+    <None Include="10\shaders\compile.bat" />
+    <None Include="10\shaders\shaderP1.comp" />
+    <None Include="10\shaders\shaderP1.frag" />
+    <None Include="10\shaders\shaderP1.vert" />
     <None Include="6\shaders\compile.bat" />
     <None Include="6\shaders\shader.comp" />
     <None Include="6\shaders\shaderP1.frag" />
@@ -171,6 +175,7 @@
     <None Include="9\shaders\shaderP1.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="10\main.cpp" />
     <ClCompile Include="1\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -212,8 +217,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="9\main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
