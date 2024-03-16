@@ -7,6 +7,10 @@ void main() {
     
 
     float a = (0.5-length(gl_PointCoord-0.5));
-    a=ceil(a);
+    if(a>0) {
+        a=1;
+        gl_FragDepth=gl_FragCoord.z;
+    }
+    else gl_FragDepth=1;
     outColor = vec4(1, densesy, densesy, a);
 }

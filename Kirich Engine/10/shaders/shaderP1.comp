@@ -8,6 +8,9 @@ struct ParticleType{
 
 layout (set = 0, binding = 0) uniform ParameterUBO {
     ParticleType particleTypes[3];
+    mat4 model;
+    mat4 view;
+    mat4 proj;
     int width;
     int height;
     int particleCount;
@@ -15,8 +18,8 @@ layout (set = 0, binding = 0) uniform ParameterUBO {
 } ubo;
 
 struct Particle {
-    vec2 position;
-    vec2 lposition;
+    vec3 position;
+    vec3 lposition;
     int type;
 };
 
@@ -32,8 +35,12 @@ layout(std430, set = 1, binding = 2) readonly buffer ParticleData {
     int data[ ];
 };
 
-int compar(int _x1, int _y1, int _x2, int _y2){
-    
+int compar(int _x1, int _y1, int _z1, int _x2, int _y2, int _z2){
+
+    if (_z1 > _z2) 
+    	return 1;
+    if (_z1 < _z2)
+    	return -1;
     if (_y1 > _y2) 
     	return 1;
     if (_y1 < _y2)
@@ -47,20 +54,20 @@ int compar(int _x1, int _y1, int _x2, int _y2){
 
 }
 
-int find(int _x, int _y){
+int find(int _x, int _y, int _z){
     int minIndex = 0;
     int maxIndex = ubo.particleCount-1;
     while((maxIndex - minIndex)>1){
         int index = int((minIndex + maxIndex) / 2.0);
 
-        if (compar(_x, _y, data[index * 3], data[index * 3 + 1]) > 0) minIndex = index;
+        if (compar(_x, _y, _z, data[index * 4], data[index * 4 + 1], data[index * 4 + 2]) > 0) minIndex = index;
         else maxIndex = index;
     }
     return minIndex;  
 }
 
-vec2 calculate(Particle p1, ParticleType pt1, Particle p2, ParticleType pt2){
-    vec2 f=vec2(0);
+vec3 calculate(Particle p1, ParticleType pt1, Particle p2, ParticleType pt2){
+    vec3 f=vec3(0);
     float r = length(p1.position - p2.position);
     if(r < ubo.particleDivision){
         float rmin = pt1.rmin + pt2.rmin;
@@ -94,53 +101,56 @@ void main()
         return;
     }
 
-    vec2 F = vec2(0, 0);
+    vec3 F = vec3(0);
 
-//    int id1=-1;
-//    while (id1<ubo.particleCount){
-//        id1+=1;
-//        if (id1==id)continue;
-//
-//        Particle secondParticle = particlesIn[id1];
-//        ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
-//
-//        F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
-//            
-//    }
-    for(int y=-1; y<=1; y++){
-        int _x = int(ceil(currentParticle.position.x / ubo.particleDivision));
-        int _y = int(ceil(currentParticle.position.y / ubo.particleDivision)) + y;
+    int id1=-1;
+    while (id1<ubo.particleCount){
+        id1+=1;
+        if (id1==id)continue;
 
-        int index = find(_x - 1, _y);
-        while (index<ubo.particleCount){
-            int _x1 = data[index * 3];
-            int _y1 = data[index * 3 + 1];
+        Particle secondParticle = particlesIn[id1];
+        ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
 
-            if ((_x + 1 < _x1) && (_y == _y1)) break;
-            else if (_y < _y1) break;
-            else if(_y > _y1){
-                index+=1;
-                continue;
-            }
-
-            uint id1 = data[index * 3 + 2];
-            index+=1;
-
-            if (id1==id)continue;
-
-            Particle secondParticle = particlesIn[id1];
-            ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
-
-            F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
-        }
-        
+        F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
+            
     }
+
+//    for(int z=-1; z<=1; z++){
+//        for(int y=-1; y<=1; y++){
+//            int _x = int(ceil(currentParticle.position.x / ubo.particleDivision));
+//            int _y = int(ceil(currentParticle.position.y / ubo.particleDivision)) + y;
+//            int _z = int(ceil(currentParticle.position.z / ubo.particleDivision)) + z;
+//            int index = find(_x - 1, _y, _z);
+//            while (index<ubo.particleCount){
+//                int _x1 = data[index * 4];
+//                int _y1 = data[index * 4 + 1];
+//                int _z1 = data[index * 4 + 2];
+//
+//                if ((_x + 1 < _x1) && (_y == _y1) && (_y == _z1)) break;
+//                else if ((_y < _y1) || (_z < _z1)) break;
+//                else if((_y > _y1) || (_z > _z1)){
+//                    index+=1;
+//                    continue;
+//                }
+//
+//                uint id1 = data[index * 4 + 3];
+//                index+=1;
+//
+//                if (id1==id)continue;
+//
+//                Particle secondParticle = particlesIn[id1];
+//                ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
+//
+//                F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
+//            }
+//        }
+//    }
 
     //F += vec2(0,0.02);
     //F -= (currentParticle.position - currentParticle.lposition)*currentParticleType.m/10000;
     
 
-    vec2 a = F / currentParticleType.m;
+    vec3 a = F / currentParticleType.m;
     //a-=(currentParticle.position - currentParticle.lposition)/4000;
 //    if (length(a)>0.1){
 //        a = normalize(a) * 0.1;

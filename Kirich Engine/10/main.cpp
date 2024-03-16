@@ -71,9 +71,34 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 	}
 }
 
+static inline int Compar(const void* p1, const void* p2) {
+	int x1 = *(int*)p1;
+	int x2 = *(int*)p2;
+	int y1 = *((int*)p1 + 1);
+	int y2 = *((int*)p2 + 1);
+	int z1 = *((int*)p2 + 2);
+	int z2 = *((int*)p2 + 2);
+
+
+	if (z1 > z2)
+		return 1;
+	if (z1 < z2)
+		return -1;
+	if (y1 > y2)
+		return 1;
+	if (y1 < y2)
+		return -1;
+	if (x1 > x2)
+		return 1;
+	if (x1 < x2)
+		return -1;
+
+	return 0;
+}
+
 struct Particles {
-	alignas(8) glm::vec2 position;
-	alignas(8) glm::vec2 lposition;
+	alignas(16) glm::vec3 position;
+	alignas(16) glm::vec3 lposition;
 	alignas(4) int type;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
@@ -106,26 +131,6 @@ struct Particles {
 		return attributeDescriptions;
 	}
 };
-struct comp {
-	static int compar(const void* p1, const void* p2) {
-		int x1 = *(int*)p1;
-		int x2 = *(int*)p2;
-		int y1 = *((int*)p1 + 1);
-		int y2 = *((int*)p2 + 1);
-
-		if (y1 > y2)
-			return 1;
-		if (y1 < y2)
-			return -1;
-		if (x1 > x2)
-			return 1;
-		if (x1 < x2)
-			return -1;
-
-		return 0;
-	}
-
-};
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsAndComputeFamily;
@@ -150,7 +155,10 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[3] = { {5, 0.1, 0}, {2, 1, 1000}, {5, 0.1, 0} };
+	UniformBufferObjectParticleType particleParametrs[3] = { {5, 0.1f, 0}, {2, 1, 1000}, {5, 0.1f, 0} };
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
 	alignas(4) int width = WIDTH;
 	alignas(4) int height = HEIGHT;
 	alignas(4) int particleCount = 0;
@@ -207,6 +215,10 @@ private:
 
 	VkCommandPool commandPool;
 
+	std::vector<VkImage> depthImagesP1;
+	std::vector <VkDeviceMemory> depthImageMemorisP1;
+	std::vector<VkImageView> depthImageViewsP1;
+
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<void*> uniformBuffersMapped;
@@ -239,12 +251,13 @@ private:
 
 	std::vector<Particles> particles;
 	int particlesInUse = 0;
-	int sortedArray[PARTICLE_COUNT * 3] = { 0 };
+	int sortedArray[PARTICLE_COUNT * 4] = { 0 };
 
 	uint32_t currentFrame = 0;
 
 	bool framebufferResized = false;
 
+	int frame = 0;
 
 	void initWindow() {
 		glfwInit();
@@ -277,6 +290,7 @@ private:
 		createGraphicsPipeline1();
 		createComputePipeline1();
 		createCommandPool();
+		createDepthResources();
 		createFramebuffers();
 		createUniformBuffers();
 		createParticlesBuffers();
@@ -707,16 +721,31 @@ private:
 		colorAttachmentP1.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachmentP1.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+		VkAttachmentDescription depthAttachmentP1{};
+		depthAttachmentP1.format = findDepthFormat();
+		depthAttachmentP1.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachmentP1.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachmentP1.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachmentP1.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachmentP1.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachmentP1.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachmentP1.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 
 		VkAttachmentReference colorAttachmentRefP1{};
 		colorAttachmentRefP1.attachment = 0;
 		colorAttachmentRefP1.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentRefP1{};
+		depthAttachmentRefP1.attachment = 1;
+		depthAttachmentRefP1.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 
 		VkSubpassDescription subpass1{};
 		subpass1.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass1.colorAttachmentCount = 1;
 		subpass1.pColorAttachments = &colorAttachmentRefP1;
+		subpass1.pDepthStencilAttachment = &depthAttachmentRefP1;
 
 		VkSubpassDependency dependency1{};
 		dependency1.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -734,7 +763,7 @@ private:
 		dependency2.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependency2.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
-		std::array<VkAttachmentDescription, 1> attachments = { colorAttachmentP1 };
+		std::array<VkAttachmentDescription, 2> attachments = { colorAttachmentP1, depthAttachmentP1 };
 
 		std::array<VkSubpassDescription, 1> subpasses = { subpass1 };
 
@@ -754,6 +783,14 @@ private:
 		}
 
 
+	}
+
+	VkFormat findDepthFormat() {
+		return findSupportedFormat(
+			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		);
 	}
 
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -882,7 +919,11 @@ private:
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencil.depthTestEnable = VK_FALSE;
+		depthStencil.depthTestEnable = VK_TRUE;
+		depthStencil.depthWriteEnable = VK_TRUE;
+		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_FALSE;
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -1033,12 +1074,79 @@ private:
 	}
 
 
+	void createDepthResources() {
+		depthImagesP1.resize(swapChainImageViews.size());
+		depthImageMemorisP1.resize(swapChainImageViews.size());
+		depthImageViewsP1.resize(swapChainImageViews.size());
+
+		VkFormat depthFormat = findDepthFormat();
+
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				depthImagesP1[i], depthImageMemorisP1[i]);
+			depthImageViewsP1[i] = createImageView(depthImagesP1[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		}
+	}
+
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = width;
+		imageInfo.extent.height = height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = mipLevels;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = tiling;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = usage;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+		if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate image memory!");
+		}
+
+		vkBindImageMemory(device, image, imageMemory, 0);
+	}
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+
+		throw std::runtime_error("failed to find suitable memory type!");
+	}
+
+
 	void createFramebuffers() {
 		swapChainFramebuffers.resize(swapChainImageViews.size());
 
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			std::array<VkImageView, 1> attachments = {
-				swapChainImageViews[i]
+			std::array<VkImageView, 2> attachments = {
+				swapChainImageViews[i],
+				depthImageViewsP1[i]
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -1098,19 +1206,6 @@ private:
 		vkBindBufferMemory(device, buffer, bufferMemory, 0);
 	}
 
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-				return i;
-			}
-		}
-
-		throw std::runtime_error("failed to find suitable memory type!");
-	}
-
 
 	void createParticlesBuffers() {
 		particles.resize(PARTICLE_COUNT);
@@ -1149,39 +1244,51 @@ private:
 		}*/
 
 
-		for (int i = 0; i < 70; ++i) {
-			for (int j = 0; j < 70; ++j) {
-				float rmin = 2;
-				/*particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * std::pow(3, 0.5));
-				if (j % 2 == 0)particles[index].position.x += rmin;*/
-				particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * 2);
-				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
-				particles[index].type = 1;
-				index++;
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 1; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
+					particles[index].lposition = particles[index].position;// +glm::vec3(float(dist(gen) / 100));
+					particles[index].type = 1;
+					index++;
+				}
 			}
 		}
 
-		for (int i = -7; i <= 7; ++i) {
-			for (int j = -7; j <= 7; ++j) {
-				if (i * i + j * j > 7*7)continue;
-				float rmin = 2;
-				particles[index].position = glm::vec2(400 + i * rmin*2, 150 + j * rmin*2);
-				particles[index].lposition = particles[index].position+glm::vec2(0,-0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-				particles[index].type = 1;
-				index++;
-			}
-		}
+		//for (int i = 0; i < 90; ++i) {
+		//	for (int j = 0; j < 90; ++j) {
+		//		float rmin = 2;
+		//		/*particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * std::pow(3, 0.5));
+		//		if (j % 2 == 0)particles[index].position.x += rmin;*/
+		//		particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * 2);
+		//		particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//		particles[index].type = 1;
+		//		index++;
+		//	}
+		//}
 
-		for (int i = -7; i <= 7; ++i) {
-			for (int j = -7; j <= 7; ++j) {
-				if (i * i + j * j > 7 * 7)continue;
-				float rmin = 2;
-				particles[index].position = glm::vec2(400 + i * rmin * 2, j * rmin * 2);
-				particles[index].lposition = particles[index].position + glm::vec2(0, -0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-				particles[index].type = 1;
-				index++;
-			}
-		}
+		//for (int i = -7; i <= 7; ++i) {
+		//	for (int j = -7; j <= 7; ++j) {
+		//		if (i * i + j * j > 7*7)continue;
+		//		float rmin = 2;
+		//		particles[index].position = glm::vec2(400 + i * rmin*2, 150 + j * rmin*2);
+		//		particles[index].lposition = particles[index].position+glm::vec2(0,-0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//		particles[index].type = 1;
+		//		index++;
+		//	}
+		//}
+
+		//for (int i = -7; i <= 7; ++i) {
+		//	for (int j = -7; j <= 7; ++j) {
+		//		if (i * i + j * j > 7 * 7)continue;
+		//		float rmin = 2;
+		//		particles[index].position = glm::vec2(400 + i * rmin * 2, j * rmin * 2);
+		//		particles[index].lposition = particles[index].position + glm::vec2(0, -0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
+		//		particles[index].type = 1;
+		//		index++;
+		//	}
+		//}
 
 
 		//particles[index].position = glm::vec2(50, 50);
@@ -1250,7 +1357,6 @@ private:
 		//}
 
 		//for (int i = 1; i < 120; ++i) {
-
 		//	particles[index].position = glm::vec2(40 * 5 + 100, (i + 40) * 5 + 50);
 		//	particles[index].lposition = particles[index].position;
 		//	particles[index].type = 2;
@@ -1272,7 +1378,6 @@ private:
 		//}
 
 		//for (int i = 1; i < 120; ++i) {
-
 		//	particles[index].position = glm::vec2(-40 * 5 + 550, (i + 40) * 5 + 50);
 		//	particles[index].lposition = particles[index].position;
 		//	particles[index].type = 2;
@@ -1280,7 +1385,6 @@ private:
 		//}
 
 		//for (int i = 1; i < 10; ++i) {
-
 		//	particles[index].position = glm::vec2(i * 5 + 300, HEIGHT - 10);
 		//	particles[index].lposition = particles[index].position;
 		//	particles[index].type = 2;
@@ -1288,15 +1392,6 @@ private:
 		//}
 
 		particlesInUse = index;
-
-		for (int i = 0; i < particlesInUse; i++)
-		{
-			sortedArray[i * 3] = int(std::ceil(particles[i].position.x / PARTICLE_DIVISION));
-			sortedArray[i * 3 + 1] = int(std::ceil(particles[i].position.y / PARTICLE_DIVISION));
-			sortedArray[i * 3 + 2] = i;
-		}
-		std::qsort(sortedArray, particlesInUse, sizeof(int) * 3, comp::compar);
-
 
 		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
 
@@ -1370,11 +1465,20 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLE_COUNT * 3;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLE_COUNT * 4;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (int i = 0; i < particlesInUse; i++)
+		{
+			sortedArray[i * 4] = int(std::ceil(particles[i].position.x / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 1] = int(std::ceil(particles[i].position.y / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 2] = int(std::ceil(particles[i].position.z / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 3] = i;
+		}
+		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -1506,7 +1610,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfo{};
 			particlesDataBufferInfo.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfo.offset = 0;
-			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLE_COUNT * 3;
+			particlesDataBufferInfo.range = sizeof(unsigned int) * PARTICLE_COUNT * 4;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1607,7 +1711,7 @@ private:
 			std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
 
 			start = end;
-
+			frame += 1;
 		}
 		//thread.join();
 		vkDeviceWaitIdle(device);
@@ -1700,24 +1804,31 @@ private:
 		ubo.width = WIDTH;
 		ubo.height = HEIGHT;
 		ubo.particleCount = particlesInUse;
+
+		ubo.model = glm::rotate(glm::mat4(1.0f), 10000 * glm::radians(0.03f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(100.0f, 0.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+		ubo.proj[1][1] *= -1;
+
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
 		VkDeviceSize bufferSize = sizeof(Particles) * particlesInUse;
-		memcpy(particles.data(), particlesBuffersMapped[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
+		memcpy(particles.data(), particlesBuffersMapped[currentFrame % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
 
 		for (int i = 0; i < particlesInUse; i++)
 		{
-			int index = sortedArray[i * 3 + 2];
-			sortedArray[i * 3] = int(std::ceil(particles[index].position.x / PARTICLE_DIVISION));
-			sortedArray[i * 3 + 1] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
+			int index = sortedArray[i * 4 + 3];
+			sortedArray[i * 4] = int(std::ceil(particles[index].position.x / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 1] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 2] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
 		}
 
-		std::qsort(sortedArray, particlesInUse, sizeof(int) * 3, comp::compar);
+		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
 
 		/*char sd = '1';
 		std::cin >> sd;*/
 
-		VkDeviceSize bufferSize1 = sizeof(int) * particlesInUse * 3;
+		VkDeviceSize bufferSize1 = sizeof(unsigned int) * particlesInUse * 4;
 		memcpy(particlesDataBuffersMapped[currentFrame], sortedArray, bufferSize1);
 	}
 
@@ -1755,10 +1866,9 @@ private:
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
-		std::array<VkClearValue, 3> clearValues{};
+		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
-		clearValues[1].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
-		clearValues[2].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
