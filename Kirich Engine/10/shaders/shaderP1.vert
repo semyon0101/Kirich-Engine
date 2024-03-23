@@ -28,6 +28,6 @@ void main() {
     //gl_Position = vec4((inPosition - vec2(ubo.width, ubo.height) / 2) / vec2(ubo.width, ubo.height) * 2, 0, 1);
     gl_PointSize=1000/gl_Position.z*ubo.particleTypes[uint(inType)].rmin*1.5;
 
-    densesy = length(inPosition-inLPosition)*10;
-    densesy=1;
+    densesy = length(inPosition-inLPosition)*3;
+    //densesy=1;
 }

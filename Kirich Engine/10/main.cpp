@@ -37,7 +37,7 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
 
 const uint32_t PARTICLE_COUNT = 10000;
-const uint32_t PARTICLE_DIVISION = 12; // rmin * 4
+const uint32_t PARTICLE_DIVISION = 8; // rmin * 4
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -76,10 +76,8 @@ static inline int Compar(const void* p1, const void* p2) {
 	int x2 = *(int*)p2;
 	int y1 = *((int*)p1 + 1);
 	int y2 = *((int*)p2 + 1);
-	int z1 = *((int*)p2 + 2);
+	int z1 = *((int*)p1 + 2);
 	int z2 = *((int*)p2 + 2);
-
-
 	if (z1 > z2)
 		return 1;
 	if (z1 < z2)
@@ -92,7 +90,6 @@ static inline int Compar(const void* p1, const void* p2) {
 		return 1;
 	if (x1 < x2)
 		return -1;
-
 	return 0;
 }
 
@@ -1244,17 +1241,29 @@ private:
 		}*/
 
 
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 1; ++j) {
-				for (int k = 0; k < 3; ++k) {
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 2; ++j) {
+				for (int k = 0; k < 1; ++k) {
 					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), k * rmin * std::pow(3, 0.5));
+					if (j % 2 == 1)particles[index].position.x += rmin;
+					if (k % 2 == 1) {
+						particles[index].position.x += rmin/2;
+						particles[index].position.y += rmin * std::pow(3, 0.5)/2;
+					}
+
+					//[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
 					particles[index].lposition = particles[index].position;// +glm::vec3(float(dist(gen) / 100));
 					particles[index].type = 1;
 					index++;
 				}
 			}
 		}
+		float rmin = 2;
+		particles[index].position = glm::vec3(rmin, 0, rmin * std::pow(3, 0.5));
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
 
 		//for (int i = 0; i < 90; ++i) {
 		//	for (int j = 0; j < 90; ++j) {
@@ -1805,22 +1814,24 @@ private:
 		ubo.height = HEIGHT;
 		ubo.particleCount = particlesInUse;
 
-		ubo.model = glm::rotate(glm::mat4(1.0f), 10000 * glm::radians(0.03f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(100.0f, 0.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), frame * glm::radians(0.03f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(100.0f, 0.0f, 30.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
+
 		VkDeviceSize bufferSize = sizeof(Particles) * particlesInUse;
 		memcpy(particles.data(), particlesBuffersMapped[currentFrame % MAX_FRAMES_IN_FLIGHT], (size_t)bufferSize);
+
 
 		for (int i = 0; i < particlesInUse; i++)
 		{
 			int index = sortedArray[i * 4 + 3];
 			sortedArray[i * 4] = int(std::ceil(particles[index].position.x / PARTICLE_DIVISION));
 			sortedArray[i * 4 + 1] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
-			sortedArray[i * 4 + 2] = int(std::ceil(particles[index].position.y / PARTICLE_DIVISION));
+			sortedArray[i * 4 + 2] = int(std::ceil(particles[index].position.z / PARTICLE_DIVISION));
 		}
 
 		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
