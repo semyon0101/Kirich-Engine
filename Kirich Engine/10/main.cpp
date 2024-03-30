@@ -1240,30 +1240,76 @@ private:
 			}
 		}*/
 
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
 
-		for (int i = 0; i < 2; ++i) {
-			for (int j = 0; j < 2; ++j) {
-				for (int k = 0; k < 1; ++k) {
-					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), k * rmin * std::pow(3, 0.5));
-					if (j % 2 == 1)particles[index].position.x += rmin;
-					if (k % 2 == 1) {
-						particles[index].position.x += rmin/2;
-						particles[index].position.y += rmin * std::pow(3, 0.5)/2;
-					}
-
-					//[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
-					particles[index].lposition = particles[index].position;// +glm::vec3(float(dist(gen) / 100));
-					particles[index].type = 1;
-					index++;
-				}
+				particles[index].position = glm::vec3(i * 4, j * 4,0);
+				particles[index].lposition = particles[index].position;
+				particles[index].type = 1;
+				index++;
 			}
 		}
-		float rmin = 2;
-		particles[index].position = glm::vec3(rmin, 0, rmin * std::pow(3, 0.5));
+
+		//for (int i = 0; i < 10; ++i) {
+		//	for (int j = 0; j < 10; ++j) {
+		//		for (int k = 0; k < 10; ++k) {
+		//			float rmin = 2;
+		//			particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), k * rmin * 2 * std::pow(6, 0.5) / 3);
+		//			if (j % 2 == 1)particles[index].position.x += rmin;
+		//			if (k % 2 == 1) {
+		//				particles[index].position.x += rmin;
+		//				particles[index].position.y += rmin * std::pow(3, 0.5) * 1 / 3;
+		//			}
+		//			//[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
+		//			particles[index].lposition = particles[index].position;// +glm::vec3(float(dist(gen) / 100));
+		//			particles[index].type = 1;
+		//			index++;
+		//		}
+		//	}
+		//}
+		
+		/*float rmin = 2;
+
+
+		particles[index].position = glm::vec3(0, 0, 0);
 		particles[index].lposition = particles[index].position;
 		particles[index].type = 1;
 		index++;
+
+		particles[index].position = glm::vec3(rmin * 2, 0, 0);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5), 0);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+		
+		particles[index].position = glm::vec3(rmin * 3, rmin * std::pow(3, 0.5), 0);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+		
+		particles[index].position = glm::vec3(rmin * 3 , rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 2 , rmin * std::pow(3, 0.5) / 3 * 4, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 4, rmin * std::pow(3, 0.5) / 3 * 4, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
 
 		//for (int i = 0; i < 90; ++i) {
 		//	for (int j = 0; j < 90; ++j) {
