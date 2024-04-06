@@ -27,8 +27,10 @@ void main() {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1);
     //gl_PointSize = ubo.particleTypes[uint(inType)].rmin*1.5; 
     //gl_Position = vec4((inPosition - vec2(ubo.width, ubo.height) / 2) / vec2(ubo.width, ubo.height) * 2, 0, 1);
-    gl_PointSize=1000/gl_Position.z*ubo.particleTypes[uint(inType)].rmin*3;
-    pointSize=gl_PointSize;
-    densesy = length(inPosition-inLPosition)*3;
-    densesy=inPosition.x;
+    pointSize = ubo.particleTypes[uint(inType)].rmin*1.5;
+    gl_PointSize = 1000/gl_Position.z*pointSize;
+
+    //densesy = length(inPosition-inLPosition)*3;
+    densesy = length(inPosition) / 30;
+    //densesy = inPosition.x;
 }
