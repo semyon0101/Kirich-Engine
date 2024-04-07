@@ -48,5 +48,4 @@ void main() {
 
     if (al<0.5)al=0.5;
     outColor = vec4(al,densesy* al, densesy*al, 1);
-    
 }
