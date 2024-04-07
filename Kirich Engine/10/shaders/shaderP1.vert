@@ -22,15 +22,20 @@ layout(location = 1) in vec3 inLPosition;
 layout(location = 2) in int inType;
 layout(location = 0) out float densesy;
 layout(location = 1) out float pointSize;
+layout(location = 2) out vec4 pointCenter;
+layout(location = 3) out mat4 inverseMatrixs;
 
 void main() {
+    pointCenter = vec4(inPosition, 1);
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1);
+    inverseMatrixs = inverse(ubo.proj* ubo.view * ubo.model);
+
     //gl_PointSize = ubo.particleTypes[uint(inType)].rmin*1.5; 
     //gl_Position = vec4((inPosition - vec2(ubo.width, ubo.height) / 2) / vec2(ubo.width, ubo.height) * 2, 0, 1);
-    pointSize = ubo.particleTypes[uint(inType)].rmin*1.5;
+    pointSize = ubo.particleTypes[uint(inType)].rmin*2;
     gl_PointSize = 1000/gl_Position.z*pointSize;
 
-    //densesy = length(inPosition-inLPosition)*3;
-    densesy = length(inPosition) / 30;
+    densesy = length(inPosition-inLPosition)*3;
+    //densesy = length(inPosition) / 30;
     //densesy = inPosition.x;
 }

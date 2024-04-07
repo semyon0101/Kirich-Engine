@@ -163,6 +163,16 @@ struct UniformBufferObject {
 
 };
 
+class Player {
+	glm::vec3 direction;
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+
+
+
+};
+
 class App {
 public:
 	void run() {
@@ -1240,13 +1250,14 @@ private:
 			}
 		}*/
 
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-
-				particles[index].position = glm::vec3(i * 4, j * 4,0);
-				particles[index].lposition = particles[index].position;
-				particles[index].type = 1;
-				index++;
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 10; ++j) {
+				for (int k = 0; k < 10; ++k) {
+					particles[index].position = glm::vec3(i * 4, j * 4, k * 4);
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 1;
+					index++;
+				}
 			}
 		}
 
@@ -1267,7 +1278,7 @@ private:
 		//		}
 		//	}
 		//}
-		
+
 		/*float rmin = 2;
 
 
@@ -1285,7 +1296,7 @@ private:
 		particles[index].lposition = particles[index].position;
 		particles[index].type = 1;
 		index++;
-		
+
 		particles[index].position = glm::vec3(rmin * 3, rmin * std::pow(3, 0.5), 0);
 		particles[index].lposition = particles[index].position;
 		particles[index].type = 1;
@@ -1295,7 +1306,7 @@ private:
 		particles[index].lposition = particles[index].position;
 		particles[index].type = 1;
 		index++;
-		
+
 		particles[index].position = glm::vec3(rmin * 3 , rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
 		particles[index].lposition = particles[index].position;
 		particles[index].type = 1;
@@ -1763,6 +1774,7 @@ private:
 			std::cin >> a;*/
 
 			auto end = std::chrono::steady_clock::now();
+			if (frame%10==1)
 			std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
 
 			start = end;
@@ -1860,7 +1872,7 @@ private:
 		ubo.height = HEIGHT;
 		ubo.particleCount = particlesInUse;
 
-		ubo.model = glm::rotate(glm::mat4(1.0f),  glm::radians(0.03f)*frame, glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * frame, glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(100.0f, 0.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
 		ubo.proj[1][1] *= -1;
