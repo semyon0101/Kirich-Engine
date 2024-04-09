@@ -98,15 +98,17 @@ void main()
     }
 
     vec3 F = vec3(0);
-    int id1=-1;
-    while (++id1<ubo.particleCount){
-        if (id1==id)continue;
+//    int id1=-1;
+//    while (++id1<ubo.particleCount){
+//        if (id1==id)continue;
+//
+//        Particle secondParticle = particlesIn[id1];
+//        ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
+//        F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
+//            
+//    }
 
-        Particle secondParticle = particlesIn[id1];
-        ParticleType secondParticleType = ubo.particleTypes[secondParticle.type];
-        F += calculate(currentParticle, currentParticleType, secondParticle, secondParticleType);
-            
-    }
+
 
 //    for(int z=-1; z<=1; z++){
 //        for(int y=-1; y<=1; y++){
@@ -150,7 +152,7 @@ void main()
     //F -= (currentParticle.position - currentParticle.lposition)*currentParticleType.m/10000;
     
 
-//    vec3 a = F / currentParticleType.m;
+    vec3 a = F / currentParticleType.m;
     
 
 
@@ -159,8 +161,8 @@ void main()
 //        a = normalize(a) * 0.1;
 //    }
 
-//    particlesOut[id].lposition = currentParticle.position;
-//    particlesOut[id].position = 2*currentParticle.position - currentParticle.lposition + a;
-//    particlesOut[id].type = currentParticle.type;
+    particlesOut[id].lposition = currentParticle.position;
+    particlesOut[id].position = 2*currentParticle.position - currentParticle.lposition + a;
+    particlesOut[id].type = currentParticle.type;
     
 }

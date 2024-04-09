@@ -164,12 +164,74 @@ struct UniformBufferObject {
 };
 
 class Player {
+public:
+	glm::vec3 position;
 	glm::vec3 direction;
-	glm::mat4 model;
+	float fovy;
+	float aspect;
+	float near;
+	float far;
 	glm::mat4 view;
 	glm::mat4 proj;
+	const float speed = 0.01;
+	const float rotationSpeed = 0.1;
+	const glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
+	void set(glm::vec3 position, glm::vec3 direction, float fovy, float aspect, float near, float far) {
+		this->position = position;
+		this->direction = glm::normalize(direction);
+		this->fovy = fovy;
+		this->aspect = aspect;
+		this->near = near;
+		this->far = far;
 
+		updateViewMatrix();
+		updateProjectionMatrix();
+	}
+
+	void updateViewMatrix() {
+		view = glm::lookAt(position, position + direction, up);
+	}
+	void updateProjectionMatrix() {
+		proj = glm::perspective(glm::radians(fovy), aspect, near, far);
+		proj[1][1] *= -1;
+	}
+
+	void keyUpdate(GLFWwindow* window) {
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			position += direction * speed; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			position -= direction * speed; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			position += glm::normalize(glm::cross(up, direction)) * speed; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			position -= glm::normalize(glm::cross(up, direction)) * speed; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+			position += glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed; updateViewMatrix();
+	}
+
+	void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+			glm::vec2 dMousePos = glm::vec2(xpos, ypos) - oldMousePos;
+			rotate(dMousePos.x * rotationSpeed, dMousePos.y * rotationSpeed);
+			updateViewMatrix();
+		}
+		oldMousePos = glm::vec2(xpos, ypos);
+	}
+private:
+	glm::vec2 oldMousePos;
+	void rotate(float x, float y) {
+		glm::mat4 rotationMat(1);
+		rotationMat = glm::rotate(rotationMat, glm::radians(-x), up);
+		rotationMat = glm::rotate(rotationMat, glm::radians(y), glm::cross(up, direction));
+		direction = glm::vec3(rotationMat * glm::vec4(direction, 1.0));
+		direction = glm::normalize(direction);
+		if (abs(direction.z) > 0.92f)
+			direction.z = 0.92f * abs(direction.z) / direction.z; direction = glm::normalize(direction);
+		
+	}
 
 };
 
@@ -178,6 +240,7 @@ public:
 	void run() {
 		initWindow();
 		initVulkan();
+		initPlayer();
 		mainLoop();
 		cleanup();
 	}
@@ -266,6 +329,8 @@ private:
 
 	int frame = 0;
 
+	static Player player;
+
 	void initWindow() {
 		glfwInit();
 
@@ -274,6 +339,7 @@ private:
 		window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+		glfwSetCursorPosCallback(window, cursorPositionCallback);
 
 	}
 
@@ -282,6 +348,11 @@ private:
 		app->framebufferResized = true;
 	}
 
+
+	static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
+	{
+		player.cursorPositionCallback(window, xpos, ypos);
+	}
 
 	void initVulkan() {
 		createInstance();
@@ -1250,9 +1321,9 @@ private:
 			}
 		}*/
 
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 10; ++j) {
-				for (int k = 0; k < 10; ++k) {
+		for (int i = 0; i < 5; ++i) {
+			for (int j = 0; j < 5; ++j) {
+				for (int k = 0; k < 1; ++k) {
 					particles[index].position = glm::vec3(i * 4, j * 4, k * 4);
 					particles[index].lposition = particles[index].position;
 					particles[index].type = 1;
@@ -1748,11 +1819,18 @@ private:
 	}
 
 
+	void initPlayer() {
+		player.set(glm::vec3(50.0f, 0.0f, 50.0f), glm::vec3(-sqrt(2), 0, -sqrt(2)), 45, swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+
+	}
+
+
 	void mainLoop() {
 		//thread = std::thread([this] {this->drawing(); });
 		auto start = std::chrono::steady_clock::now();
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
+			player.keyUpdate(window);
 			drawFrame();
 
 
@@ -1774,8 +1852,8 @@ private:
 			std::cin >> a;*/
 
 			auto end = std::chrono::steady_clock::now();
-			if (frame%10==1)
-			std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
+			if (frame % 10 == 1)
+				std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
 
 			start = end;
 			frame += 1;
@@ -1872,10 +1950,9 @@ private:
 		ubo.height = HEIGHT;
 		ubo.particleCount = particlesInUse;
 
-		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * frame, glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(100.0f, 0.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-		ubo.proj[1][1] *= -1;
+		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * 0, glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = player.view;
+		ubo.proj = player.proj;
 
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
@@ -2061,6 +2138,8 @@ private:
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
 	}
 };
+Player App::player = Player();
+
 
 int main() {
 
