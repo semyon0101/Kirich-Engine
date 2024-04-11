@@ -35,7 +35,7 @@ void main() {
     pointRadius = ubo.particleTypes[uint(inType)].rmin;
     gl_PointSize = -ubo.height*ubo.proj[1][1]*pointRadius/gl_Position.w;
 
-    densesy = length(inPosition-inLPosition)*3;
+    //densesy = length(inPosition-inLPosition)*3;
     //densesy = length(inPosition) / 30;
-    //densesy = inPosition.x;
+    densesy = 1-inPosition.x+(1-inPosition.y);
 }

@@ -173,7 +173,7 @@ public:
 	float far;
 	glm::mat4 view;
 	glm::mat4 proj;
-	const float speed = 0.01;
+	const float speed = 30;
 	const float rotationSpeed = 0.1;
 	const glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
@@ -192,24 +192,25 @@ public:
 	void updateViewMatrix() {
 		view = glm::lookAt(position, position + direction, up);
 	}
+
 	void updateProjectionMatrix() {
 		proj = glm::perspective(glm::radians(fovy), aspect, near, far);
 		proj[1][1] *= -1;
 	}
 
-	void keyUpdate(GLFWwindow* window) {
+	void keyUpdate(GLFWwindow* window, float deltaTime) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-			position += direction * speed; updateViewMatrix();
+			position += direction * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-			position -= direction * speed; updateViewMatrix();
+			position -= direction * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			position += glm::normalize(glm::cross(up, direction)) * speed; updateViewMatrix();
+			position += glm::normalize(glm::cross(up, direction)) * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			position -= glm::normalize(glm::cross(up, direction)) * speed; updateViewMatrix();
+			position -= glm::normalize(glm::cross(up, direction)) * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-			position += glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed; updateViewMatrix();
+			position += glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed; updateViewMatrix();
+			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
 	}
 
 	void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -230,7 +231,7 @@ private:
 		direction = glm::normalize(direction);
 		if (abs(direction.z) > 0.92f)
 			direction.z = 0.92f * abs(direction.z) / direction.z; direction = glm::normalize(direction);
-		
+
 	}
 
 };
@@ -1301,36 +1302,155 @@ private:
 
 		std::uniform_real_distribution<> dist(-1, 1);
 
-		/*for (int i = 0; i < 20; ++i) {
-			for (int j = 0; j < 20; ++j) {
-
-				particles[index].position = glm::vec2(100 + i * 5, 100 + j * 5);
-				particles[index].lposition = particles[index].position +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-				particles[index].type = 1;
-				index++;
-			}
-		}
-
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 10; ++j) {
-				if (pow(i-5,2)+pow(j-5,2) > 5 * 5)continue;
-				particles[index].position = glm::vec2(250 + i * 5, 125 + j * 5);
-				particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100)+glm::vec2(1,0);
-				particles[index].type = 1;
-				index++;
-			}
-		}*/
-
-		for (int i = 0; i < 5; ++i) {
-			for (int j = 0; j < 5; ++j) {
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
 				for (int k = 0; k < 1; ++k) {
-					particles[index].position = glm::vec3(i * 4, j * 4, k * 4);
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
+					if (j % 2 == 1)particles[index].position.x += rmin;
+
 					particles[index].lposition = particles[index].position;
 					particles[index].type = 1;
 					index++;
 				}
 			}
 		}
+		/*for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 1; ++j) {
+				for (int k = 0; k < 1; ++k) {
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
+					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 1;
+					index++;
+				}
+			}
+		}
+		for (int i = -1; i < 3; ++i) {
+			for (int j = 1; j < 2; ++j) {
+				for (int k = 0; k < 1; ++k) {
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
+					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 1;
+					index++;
+				}
+			}
+		}
+		for (int i = -1; i < 4; ++i) {
+			for (int j = 2; j < 3; ++j) {
+				for (int k = 0; k < 1; ++k) {
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
+					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 1;
+					index++;
+				}
+			}
+		}
+		for (int i = -1; i < 3; ++i) {
+			for (int j = 3; j < 4; ++j) {
+				for (int k = 0; k < 1; ++k) {
+					float rmin = 2;
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
+					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 1;
+					index++;
+				}
+			}
+		}*/
+		
+
+		float rmin = 2;
+
+		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 3, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+		
+		/*particles[index].position = glm::vec3(rmin * 5, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
+
+
+		/*particles[index].position = glm::vec3(rmin * 0, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
+
+		particles[index].position = glm::vec3(rmin * 2, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 4, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+		
+
+		/*particles[index].position = glm::vec3(rmin * 1, 7*rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 3, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 5, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
+
+		/*particles[index].position = glm::vec3(-rmin * 1,7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 1,7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 3, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;
+
+		particles[index].position = glm::vec3(rmin * 5, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
+
+
+		/*particles[index].position = glm::vec3(rmin * 2, 2*rmin * std::pow(3, 0.5)/3, rmin * 4 * std::pow(6, 0.5) / 3);
+		particles[index].lposition = particles[index].position;
+		particles[index].type = 1;
+		index++;*/
+		
+		
+		
+
+		
+
+		
+
 
 		//for (int i = 0; i < 10; ++i) {
 		//	for (int j = 0; j < 10; ++j) {
@@ -1828,9 +1948,11 @@ private:
 	void mainLoop() {
 		//thread = std::thread([this] {this->drawing(); });
 		auto start = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::duration deltaTime;
+
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
-			player.keyUpdate(window);
+			player.keyUpdate(window, (std::chrono::duration_cast<std::chrono::microseconds>(deltaTime) / 1000000.0f).count());
 			drawFrame();
 
 
@@ -1852,9 +1974,9 @@ private:
 			std::cin >> a;*/
 
 			auto end = std::chrono::steady_clock::now();
+			deltaTime = end - start;
 			if (frame % 10 == 1)
-				std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(end - start) / 1000000.0f).count() << "\n";
-
+				std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(deltaTime) / 1000000.0f).count() << std::endl;
 			start = end;
 			frame += 1;
 		}

@@ -43,8 +43,9 @@ void main() {
     //vec3 normal=vec3((gl_PointCoord-0.5)*2, sqrt(1-pow((gl_PointCoord.x-0.5)*2,2)- pow((gl_PointCoord.y-0.5)*2,2)));
     vec3 sun = vec3(1/sqrt(3),1/sqrt(3),-1/sqrt(3));
     al=dot(sun,normal);
-    al=(al-0.2)*1.5;
+    al=(al+1)/4+0.2;
+    //al=(al-0.2)*1.5;
     
-    if (al<0.5)al=0.5;
+    //if (al<0.5)al=0.5;
     outColor = vec4(al,densesy* al, densesy*al, 1);
 }
