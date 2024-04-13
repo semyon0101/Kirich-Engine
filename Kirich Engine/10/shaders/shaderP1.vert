@@ -1,4 +1,5 @@
 #version 450
+#define PARTICLE_PARAMETR_COUNT 3
 
 struct ParticleType{
     float rmin;
@@ -7,7 +8,7 @@ struct ParticleType{
 };
 
 layout (set = 0, binding = 0) uniform ParameterUBO {
-    ParticleType particleTypes[3];
+    ParticleType particleTypes[PARTICLE_PARAMETR_COUNT];
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -30,12 +31,10 @@ void main() {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1);
     inverseMatrixs = inverse(ubo.proj* ubo.view * ubo.model);
 
-    //gl_PointSize = ubo.particleTypes[uint(inType)].rmin*1.5; 
-    //gl_Position = vec4((inPosition - vec2(ubo.width, ubo.height) / 2) / vec2(ubo.width, ubo.height) * 2, 0, 1);
     pointRadius = ubo.particleTypes[uint(inType)].rmin;
     gl_PointSize = -ubo.height*ubo.proj[1][1]*pointRadius/gl_Position.w;
 
-    //densesy = length(inPosition-inLPosition)*3;
+    densesy = length(inPosition-inLPosition)*3;
     //densesy = length(inPosition) / 30;
-    densesy = 1-inPosition.x+(1-inPosition.y);
+    //densesy = 1-inPosition.x+(1-inPosition.y);
 }

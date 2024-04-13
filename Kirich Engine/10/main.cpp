@@ -31,13 +31,29 @@
 #include <random>
 #include <thread>
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+#define SHOW_FPS 1
+#define MAX_FRAMES_IN_FLIGHT 2
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 800;
+#define WIDTH 800
+#define HEIGHT 800
 
-const uint32_t PARTICLE_COUNT = 10000;
-const uint32_t PARTICLE_DIVISION = 8; // rmin * 4
+#define PARTICLE_COUNT 10000
+#define PARTICLE_DIVISION 8 // rmin * 4
+
+
+#define CASE 0
+
+#if CASE == 0
+#define PARTICLE_PARAMETR_COUNT 3
+#define PARTICLE_PARAMETRS { {0, 0, 0}, {2, 0.5f, 1000}, {1, 1, 1000} }
+#elif CASE == 1
+#define PARTICLE_PARAMETR_COUNT 2
+#define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 0.5f, 1000} }
+#else
+#define PARTICLE_PARAMETR_COUNT 1
+#define PARTICLE_PARAMETRS { {0, 0, 0} }
+#endif 
+
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -152,7 +168,7 @@ struct UniformBufferObjectParticleType {
 };
 
 struct UniformBufferObject {
-	UniformBufferObjectParticleType particleParametrs[3] = { {5, 0.1f, 0}, {2, 1, 1000}, {5, 0.1f, 0} };
+	UniformBufferObjectParticleType particleParametrs[PARTICLE_PARAMETR_COUNT] = PARTICLE_PARAMETRS;
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
@@ -174,7 +190,7 @@ public:
 	glm::mat4 view;
 	glm::mat4 proj;
 	const float speed = 30;
-	const float rotationSpeed = 0.1;
+	const float rotationSpeed = 0.1f;
 	const glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
 	void set(glm::vec3 position, glm::vec3 direction, float fovy, float aspect, float near, float far) {
@@ -211,6 +227,9 @@ public:
 			position += glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
+		if (glfwGetKey(window, GLFW_KEY_TAB	) == GLFW_PRESS)
+			std::cout << "position: ( " << position.x << ", " << position.y << ", " << position.z << " ); direction: ( " 
+			<< direction.x << ", " << direction.y << ", " << direction.z << " );" << std::endl;
 	}
 
 	void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -254,9 +273,6 @@ public:
 	}
 private:
 	GLFWwindow* window;
-
-	int width = WIDTH;
-	int height = HEIGHT;
 
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -326,8 +342,6 @@ private:
 
 	uint32_t currentFrame = 0;
 
-	bool framebufferResized = false;
-
 	int frame = 0;
 
 	static Player player;
@@ -336,19 +350,13 @@ private:
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-		window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+		window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
-		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 		glfwSetCursorPosCallback(window, cursorPositionCallback);
 
 	}
-
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-		auto app = reinterpret_cast<App*>(glfwGetWindowUserPointer(window));
-		app->framebufferResized = true;
-	}
-
 
 	static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 	{
@@ -1291,23 +1299,18 @@ private:
 
 		std::mt19937 gen(0);
 		int index = 0;
-		/*std::uniform_real_distribution<> dist(0.1, 0.9);
-		for (int i = 0; i < PARTICLE_COUNT; ++i) {
 
-			particles[i].position = glm::vec2(dist(gen) * width, dist(gen) * height);
-			particles[i].lposition = particles[i].position;
-			particles[i].type = 1;
-		}*/
-
-
+#if CASE == 0
 		std::uniform_real_distribution<> dist(-1, 1);
 
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				for (int k = 0; k < 1; ++k) {
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 5; ++j) {
+				for (int k = 0; k < 10; ++k) {
 					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
-					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
+					particles[index].position.x += rmin * ((j + k) % 2);
+					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
 
 					particles[index].lposition = particles[index].position;
 					particles[index].type = 1;
@@ -1315,12 +1318,57 @@ private:
 				}
 			}
 		}
-		/*for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 1; ++j) {
+
+		for (int i = -2; i < 2; ++i) {
+			for (int j = -2; j < 2; ++j) {
+				for (int k = -2; k < 2; ++k) {
+					float rmin = 1;
+
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
+					particles[index].position.x += rmin * ((j + k) % 2);
+					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
+					if (glm::length(particles[index].position) / rmin > 3)continue;
+					particles[index].position += glm::vec3(20, -40, 20);
+
+
+					particles[index].lposition = particles[index].position;
+					particles[index].lposition += glm::vec3(0, -0.1f, 0);
+					particles[index].type = 2;
+					index++;
+				}
+			}
+		}
+#elif CASE == 1
+		for (int i = 0; i < 50; ++i) {
+			for (int j = 0; j < 50; ++j) {
 				for (int k = 0; k < 1; ++k) {
 					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
-					if (j % 2 == 1)particles[index].position.x += rmin;
+
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
+					particles[index].position.x += rmin * ((j + k) % 2);
+					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
+
+					particles[index].position += glm::vec3(-50, -50, 0);
+
+
+					particles[index].lposition = particles[index].position;
+					particles[index].type = 0;
+					index++;
+				}
+			}
+		}
+
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 10; ++j) {
+				for (int k = 0; k < 10; ++k) {
+					float rmin = 2;
+
+					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
+					particles[index].position.x += rmin * ((j + k) % 2);
+					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
+
+					particles[index].position += glm::vec3(0, 0, 100);
+
 
 					particles[index].lposition = particles[index].position;
 					particles[index].type = 1;
@@ -1328,325 +1376,8 @@ private:
 				}
 			}
 		}
-		for (int i = -1; i < 3; ++i) {
-			for (int j = 1; j < 2; ++j) {
-				for (int k = 0; k < 1; ++k) {
-					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
-					if (j % 2 == 1)particles[index].position.x += rmin;
+#endif
 
-					particles[index].lposition = particles[index].position;
-					particles[index].type = 1;
-					index++;
-				}
-			}
-		}
-		for (int i = -1; i < 4; ++i) {
-			for (int j = 2; j < 3; ++j) {
-				for (int k = 0; k < 1; ++k) {
-					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
-					if (j % 2 == 1)particles[index].position.x += rmin;
-
-					particles[index].lposition = particles[index].position;
-					particles[index].type = 1;
-					index++;
-				}
-			}
-		}
-		for (int i = -1; i < 3; ++i) {
-			for (int j = 3; j < 4; ++j) {
-				for (int k = 0; k < 1; ++k) {
-					float rmin = 2;
-					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), 0);
-					if (j % 2 == 1)particles[index].position.x += rmin;
-
-					particles[index].lposition = particles[index].position;
-					particles[index].type = 1;
-					index++;
-				}
-			}
-		}*/
-		
-
-		float rmin = 2;
-
-		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 3, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-		
-		/*particles[index].position = glm::vec3(rmin * 5, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-
-
-		/*particles[index].position = glm::vec3(rmin * 0, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-
-		particles[index].position = glm::vec3(rmin * 2, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 4, 4 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-		
-
-		/*particles[index].position = glm::vec3(rmin * 1, 7*rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 3, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 5, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-
-		/*particles[index].position = glm::vec3(-rmin * 1,7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 1,7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 3, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 5, 7 * rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-
-
-		/*particles[index].position = glm::vec3(rmin * 2, 2*rmin * std::pow(3, 0.5)/3, rmin * 4 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-		
-		
-		
-
-		
-
-		
-
-
-		//for (int i = 0; i < 10; ++i) {
-		//	for (int j = 0; j < 10; ++j) {
-		//		for (int k = 0; k < 10; ++k) {
-		//			float rmin = 2;
-		//			particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::pow(3, 0.5), k * rmin * 2 * std::pow(6, 0.5) / 3);
-		//			if (j % 2 == 1)particles[index].position.x += rmin;
-		//			if (k % 2 == 1) {
-		//				particles[index].position.x += rmin;
-		//				particles[index].position.y += rmin * std::pow(3, 0.5) * 1 / 3;
-		//			}
-		//			//[index].position = glm::vec3(i * rmin * 2, j * rmin * 2, k * rmin * 2);
-		//			particles[index].lposition = particles[index].position;// +glm::vec3(float(dist(gen) / 100));
-		//			particles[index].type = 1;
-		//			index++;
-		//		}
-		//	}
-		//}
-
-		/*float rmin = 2;
-
-
-		particles[index].position = glm::vec3(0, 0, 0);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 2, 0, 0);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5), 0);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 3, rmin * std::pow(3, 0.5), 0);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 1, rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 3 , rmin * std::pow(3, 0.5) / 3, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 2 , rmin * std::pow(3, 0.5) / 3 * 4, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;
-
-		particles[index].position = glm::vec3(rmin * 4, rmin * std::pow(3, 0.5) / 3 * 4, rmin * 2 * std::pow(6, 0.5) / 3);
-		particles[index].lposition = particles[index].position;
-		particles[index].type = 1;
-		index++;*/
-
-		//for (int i = 0; i < 90; ++i) {
-		//	for (int j = 0; j < 90; ++j) {
-		//		float rmin = 2;
-		//		/*particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * std::pow(3, 0.5));
-		//		if (j % 2 == 0)particles[index].position.x += rmin;*/
-		//		particles[index].position = glm::vec2(270 + i * rmin * 2, 270 + j * rmin * 2);
-		//		particles[index].lposition = particles[index].position + glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//		particles[index].type = 1;
-		//		index++;
-		//	}
-		//}
-
-		//for (int i = -7; i <= 7; ++i) {
-		//	for (int j = -7; j <= 7; ++j) {
-		//		if (i * i + j * j > 7*7)continue;
-		//		float rmin = 2;
-		//		particles[index].position = glm::vec2(400 + i * rmin*2, 150 + j * rmin*2);
-		//		particles[index].lposition = particles[index].position+glm::vec2(0,-0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//		particles[index].type = 1;
-		//		index++;
-		//	}
-		//}
-
-		//for (int i = -7; i <= 7; ++i) {
-		//	for (int j = -7; j <= 7; ++j) {
-		//		if (i * i + j * j > 7 * 7)continue;
-		//		float rmin = 2;
-		//		particles[index].position = glm::vec2(400 + i * rmin * 2, j * rmin * 2);
-		//		particles[index].lposition = particles[index].position + glm::vec2(0, -0.2);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//		particles[index].type = 1;
-		//		index++;
-		//	}
-		//}
-
-
-		//particles[index].position = glm::vec2(50, 50);
-		//particles[index].lposition = particles[index].position+glm::vec2(0,-0.01);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//particles[index].type = 1;
-		//index++;
-
-		//particles[index].position = glm::vec2(50, 100);
-		//particles[index].lposition = particles[index].position + glm::vec2(0, 0);// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//particles[index].type = 1;
-		//index++;
-
-		/*for (int i = 1; i < WIDTH / 5; ++i) {
-
-			particles[index].position = glm::vec2(i * 5, 10);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < HEIGHT / 5; ++i) {
-
-			particles[index].position = glm::vec2(10, i * 5);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < HEIGHT / 5; ++i) {
-
-			particles[index].position = glm::vec2(WIDTH - 10, i * 5);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}
-		for (int i = 1; i < WIDTH / 5; ++i) {
-
-			particles[index].position = glm::vec2(i * 5, HEIGHT - 10);
-			particles[index].lposition = particles[index].position;
-			particles[index].type = 0;
-			index++;
-		}*/
-
-
-		//for (int i = 0; i < 30; ++i) {
-		//	for (int j = 0; j < 20; ++j) {
-		//		float rmin = 3;
-		//		particles[index].position = glm::vec2(220 + i * rmin * 2, 20 + j * rmin * std::pow(3, 0.5));
-		//		if (j % 2 == 0)particles[index].position.x += rmin;
-		//		particles[index].lposition = particles[index].position;// +glm::vec2(dist(gen) / 100, dist(gen) / 100);
-		//		particles[index].type = 1;
-		//		index++;
-		//	}
-		//}
-		//for (int i = 1; i <= 40; ++i) {
-
-		//	particles[index].position = glm::vec2(i * 5 + 100, i * 5 + 50);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 0;
-		//	index++;
-		//}
-		//for (int i = 1; i < 11; ++i) {
-
-		//	particles[index].position = glm::vec2(100, i * 5);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 0;
-		//	index++;
-		//}
-
-		//for (int i = 1; i < 120; ++i) {
-		//	particles[index].position = glm::vec2(40 * 5 + 100, (i + 40) * 5 + 50);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 2;
-		//	index++;
-		//}
-		//for (int i = 1; i <= 40; ++i) {
-
-		//	particles[index].position = glm::vec2(-i * 5 + 550, i * 5 + 50);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 0;
-		//	index++;
-		//}
-		//for (int i = 1; i < 11; ++i) {
-
-		//	particles[index].position = glm::vec2(550, i * 5);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 0;
-		//	index++;
-		//}
-
-		//for (int i = 1; i < 120; ++i) {
-		//	particles[index].position = glm::vec2(-40 * 5 + 550, (i + 40) * 5 + 50);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 2;
-		//	index++;
-		//}
-
-		//for (int i = 1; i < 10; ++i) {
-		//	particles[index].position = glm::vec2(i * 5 + 300, HEIGHT - 10);
-		//	particles[index].lposition = particles[index].position;
-		//	particles[index].type = 2;
-		//	index++;
-		//}
 
 		particlesInUse = index;
 
@@ -1667,7 +1398,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				particlesBuffers[i], particlesBuffersMemory[i]);
 			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
 			vkMapMemory(device, particlesBuffersMemory[i], 0, bufferSize, 0, &particlesBuffersMapped[i]);
@@ -1940,8 +1671,13 @@ private:
 
 
 	void initPlayer() {
-		player.set(glm::vec3(50.0f, 0.0f, 50.0f), glm::vec3(-sqrt(2), 0, -sqrt(2)), 45, swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-
+#if CASE == 0
+		player.set(glm::vec3(100, 0, 100), glm::vec3(-sqrt(2), 0, -sqrt(2)), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+#elif CASE == 1
+		player.set(glm::vec3(282.141f, -138.19f, 162.473f), glm::vec3(-0.674087f, 0.519118f, -0.525474f), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+#else 
+		player.set(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+#endif
 	}
 
 
@@ -1975,8 +1711,11 @@ private:
 
 			auto end = std::chrono::steady_clock::now();
 			deltaTime = end - start;
+
+#if SHOW_FPS == 1
 			if (frame % 10 == 1)
 				std::cout << 1.0f / (std::chrono::duration_cast<std::chrono::microseconds>(deltaTime) / 1000000.0f).count() << std::endl;
+#endif
 			start = end;
 			frame += 1;
 		}
@@ -2001,9 +1740,9 @@ private:
 		submitInfoComp.commandBufferCount = 1;
 		submitInfoComp.pCommandBuffers = &computeCommandBuffers[currentFrame];
 
-		if (vkQueueSubmit(computeQueue, 1, &submitInfoComp, computeInFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(computeQueue, 1, &submitInfoComp, computeInFlightFences[currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit compute command buffer!");
-		};
+
 
 
 		vkWaitForFences(device, 1, &graphicsInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -2012,13 +1751,10 @@ private:
 		uint32_t imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			recreateSwapChain();
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+
+		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 			throw std::runtime_error("failed to acquire swap chain image!");
-		}
+
 
 
 		vkResetCommandBuffer(graphicsCommandBuffers[currentFrame], 0);
@@ -2037,9 +1773,9 @@ private:
 		submitInfoGraph.signalSemaphoreCount = 1;
 		submitInfoGraph.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
 
-		if (vkQueueSubmit(graphicsQueue, 1, &submitInfoGraph, graphicsInFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfoGraph, graphicsInFlightFences[currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit draw command buffer!");
-		}
+
 
 
 		VkSwapchainKHR swapChains[] = { swapChain };
@@ -2054,13 +1790,10 @@ private:
 
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-			framebufferResized = false;
-			recreateSwapChain();
-		}
-		else if (result != VK_SUCCESS) {
+
+		if (result != VK_SUCCESS)
 			throw std::runtime_error("failed to present swap chain image!");
-		}
+
 
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -2068,8 +1801,6 @@ private:
 
 	void updateBuffers() {
 		UniformBufferObject ubo{};
-		ubo.width = WIDTH;
-		ubo.height = HEIGHT;
 		ubo.particleCount = particlesInUse;
 
 		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * 0, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -2175,27 +1906,25 @@ private:
 		}
 	}
 
-	void recreateSwapChain() {
-		int width = 0, height = 0;
-		glfwGetFramebufferSize(window, &width, &height);
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(window, &width, &height);
-			glfwWaitEvents();
-		}
-		this->width = width;
-		this->height = height;
-		vkDeviceWaitIdle(device);
-
-		cleanupSwapChain();
-
-		createSwapChain();
-		createImageViews();
-		createFramebuffers();
-	}
-
 
 	void cleanup() {
-		cleanupSwapChain();
+		for (int i = 0; i < swapChainImageViews.size(); i++)
+		{
+			vkDestroyImageView(device, depthImageViewsP1[i], nullptr);
+			vkDestroyImage(device, depthImagesP1[i], nullptr);
+			vkFreeMemory(device, depthImageMemorisP1[i], nullptr);
+		}
+
+		for (auto framebuffer : swapChainFramebuffers) {
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+		}
+
+		for (auto imageView : swapChainImageViews) {
+			vkDestroyImageView(device, imageView, nullptr);
+		}
+
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
+
 
 		vkDestroyPipeline(device, graphicsPipeline1, nullptr);
 		vkDestroyPipelineLayout(device, graphicsPipelineLayout1, nullptr);
@@ -2244,20 +1973,6 @@ private:
 		glfwDestroyWindow(window);
 
 		glfwTerminate();
-	}
-
-	void cleanupSwapChain() {
-
-
-		for (auto framebuffer : swapChainFramebuffers) {
-			vkDestroyFramebuffer(device, framebuffer, nullptr);
-		}
-
-		for (auto imageView : swapChainImageViews) {
-			vkDestroyImageView(device, imageView, nullptr);
-		}
-
-		vkDestroySwapchainKHR(device, swapChain, nullptr);
 	}
 };
 Player App::player = Player();

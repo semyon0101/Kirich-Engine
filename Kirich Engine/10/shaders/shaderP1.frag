@@ -1,4 +1,5 @@
 #version 450
+#define PARTICLE_PARAMETR_COUNT 3
 
 struct ParticleType{
     float rmin;
@@ -7,7 +8,7 @@ struct ParticleType{
 };
 
 layout (set = 0, binding = 0) uniform ParameterUBO {
-    ParticleType particleTypes[3];
+    ParticleType particleTypes[PARTICLE_PARAMETR_COUNT];
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -40,7 +41,6 @@ void main() {
     vec4 position = inverseMatrixs*vec4((gl_FragCoord.x/ubo.width-0.5)*2,(gl_FragCoord.y/ubo.height-0.5)*2, gl_FragDepth, 1);
     vec3 normal = normalize(pointCenter.xyz/pointCenter.w - position.xyz/position.w);
 
-    //vec3 normal=vec3((gl_PointCoord-0.5)*2, sqrt(1-pow((gl_PointCoord.x-0.5)*2,2)- pow((gl_PointCoord.y-0.5)*2,2)));
     vec3 sun = vec3(1/sqrt(3),1/sqrt(3),-1/sqrt(3));
     al=dot(sun,normal);
     al=(al+1)/4+0.2;
