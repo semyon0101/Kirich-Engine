@@ -1,0 +1,55 @@
+#version 450
+#define PARTICLE_PARAMETR_COUNT 2
+
+struct ParticleType{
+    float rmin;
+    float e;
+    float m;
+};
+
+layout (set = 0, binding = 0) uniform ParameterUBO {
+    ParticleType particleTypes[PARTICLE_PARAMETR_COUNT];
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+    int width;
+    int height;
+    int particleCount;
+    int particleDivision;
+} ubo;
+
+struct Particle {
+    vec3 position;
+    vec3 lposition;
+    int type;
+};
+
+layout(std430, set = 1, binding = 1) readonly buffer ParticleSSB {
+    Particle particles[ ];
+};
+
+layout(std430, set = 1, binding = 2) readonly buffer ParticleDataIn {
+    int dataIn[ ];
+};
+
+layout(std430, set = 1, binding = 3) buffer ParticleDataOut {
+    int dataOut[ ];
+};
+
+
+
+
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+void main() 
+{
+    
+    uint id = dataIn[gl_GlobalInvocationID.x * 4 + 3];
+    Particle currentParticle = particles[id];
+
+    dataOut[gl_GlobalInvocationID.x * 4] = int(ceil(currentParticle.position.x / ubo.particleDivision));
+    dataOut[gl_GlobalInvocationID.x * 4 + 1] = int(ceil(currentParticle.position.y / ubo.particleDivision));
+    dataOut[gl_GlobalInvocationID.x * 4 + 2] = int(ceil(currentParticle.position.z / ubo.particleDivision));
+    dataOut[gl_GlobalInvocationID.x * 4 + 3] = int(id);
+    
+}
