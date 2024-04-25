@@ -31,30 +31,33 @@
 #include <random>
 #include <thread>
 
-#define SHOW_FPS 0
-#define STOP_EVERY_FRAME 1
+#define SHOW_FPS 1
+#define STOP_EVERY_FRAME 0
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
 #define WIDTH 800
 #define HEIGHT 800
 
-#define PARTICLE_COUNT 10000
-#define PARTICLE_DIVISION 8 // rmin * 4
+#define MAX_PARTICLE_COUNT 10000
 
 
-#define CASE 1
+#define CASE 2
 
 #if CASE == 0
+#define PARTICLE_DIVISION 8 // rmin * 4
 #define PARTICLE_PARAMETR_COUNT 2
-#define PARTICLE_PARAMETRS { {2, 0.5f, 1000}, {1, 1, 10000} }
+#define PARTICLE_PARAMETRS { {2, 0.2f, 1000}, {1, 1, 10000} }
 #elif CASE == 1
+#define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
 #define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 4.0f, 1000} }
 #elif CASE == 2
+#define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
 #define PARTICLE_PARAMETRS { {2, 1, 1000}, {0, 0, 0} }
 #else
+#define PARTICLE_DIVISION 1 
 #define PARTICLE_PARAMETR_COUNT 2
 #define PARTICLE_PARAMETRS { {0, 0, 0}, {0, 0, 0} }
 #endif 
@@ -253,9 +256,15 @@ private:
 		rotationMat = glm::rotate(rotationMat, glm::radians(y), glm::cross(up, direction));
 		direction = glm::vec3(rotationMat * glm::vec4(direction, 1.0));
 		direction = glm::normalize(direction);
-		if (abs(direction.z) > 0.92f)
-			direction.z = 0.92f * abs(direction.z) / direction.z; direction = glm::normalize(direction);
+		if (abs(direction.z) > 0.97f) {
+			direction.z = 0.97f * abs(direction.z) / direction.z; 
+			float k = direction.x / direction.y;
+			direction.y =std::sqrt( (1 - direction.z * direction.z)/(k * k + 1)) * abs(direction.y) / direction.y;
+			direction.x = std::sqrt(1 - direction.z * direction.z - direction.y * direction.y) * abs(direction.x) / direction.x;
 
+			//direction = glm::normalize(direction);
+
+		}
 	}
 
 };
@@ -345,7 +354,7 @@ private:
 
 	
 	int particlesInUse = 0;
-	int sortedArray[PARTICLE_COUNT * 4] = { 0 };
+	int sortedArray[MAX_PARTICLE_COUNT * 4] = { 0 };
 
 	uint32_t currentFrame = 0;
 
@@ -1346,15 +1355,15 @@ private:
 
 	void createParticlesBuffers() {
 		std::vector<Particles> particles;
-		particles.resize(PARTICLE_COUNT);
+		particles.resize(MAX_PARTICLE_COUNT);
 
 		std::mt19937 gen(0);
 		int index = 0;
 
 #if CASE == 0
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 5; ++j) {
-				for (int k = 0; k < 10; ++k) {
+		for (int i = 0; i < 15; ++i) {
+			for (int j = 0; j < 10; ++j) {
+				for (int k = 0; k < 15; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1368,16 +1377,16 @@ private:
 			}
 		}
 
-		for (int i = -2; i < 2; ++i) {
-			for (int j = -2; j < 2; ++j) {
-				for (int k = -2; k < 2; ++k) {
+		for (int i = -5; i < 5; ++i) {
+			for (int j = -5; j < 5; ++j) {
+				for (int k = -5; k < 5; ++k) {
 					float rmin = 1;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
 					particles[index].position.x += rmin * ((j + k) % 2);
 					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
-					if (glm::length(particles[index].position) / rmin > 3)continue;
-					particles[index].position += glm::vec3(20, -40, 20);
+					if (glm::length(particles[index].position) / rmin > 6)continue;
+					particles[index].position += glm::vec3(30, -40, 27);
 
 
 					particles[index].lposition = particles[index].position;
@@ -1427,10 +1436,11 @@ private:
 			}
 		}
 #elif CASE == 2
+		std::uniform_real_distribution<> dist(-1, 1);
 		// 20 20 20
 		for (int i = 0; i < 20; ++i) {
 			for (int j = 0; j < 20; ++j) {
-				for (int k = 0; k < 20; ++k) {
+				for (int k = 0; k < 25; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1439,6 +1449,7 @@ private:
 
 
 					particles[index].lposition = particles[index].position;
+					//particles[index].lposition += +glm::vec3(dist(gen) / 30, dist(gen) / 30, dist(gen) / 30);
 					particles[index].type = 0;
 					index++;
 				}
@@ -1459,7 +1470,7 @@ private:
 
 		
 
-		VkDeviceSize bufferSize = sizeof(Particles) * PARTICLE_COUNT;
+		VkDeviceSize bufferSize = sizeof(Particles) * MAX_PARTICLE_COUNT;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1529,7 +1540,7 @@ private:
 
 
 	void createParticlesDataBuffers() {
-		VkDeviceSize bufferSize = sizeof(unsigned int) * PARTICLE_COUNT * 4;
+		VkDeviceSize bufferSize = sizeof(unsigned int) * MAX_PARTICLE_COUNT * 4;
 
 		particlesDataBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		particlesDataBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1642,7 +1653,7 @@ private:
 			VkDescriptorBufferInfo  particlesBufferInfoLastFrame{};
 			particlesBufferInfoLastFrame.buffer = particlesBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
 			particlesBufferInfoLastFrame.offset = 0;
-			particlesBufferInfoLastFrame.range = sizeof(Particles) * PARTICLE_COUNT;
+			particlesBufferInfoLastFrame.range = sizeof(Particles) * MAX_PARTICLE_COUNT;
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = particlesDescriptorSets[i];
@@ -1655,7 +1666,7 @@ private:
 			VkDescriptorBufferInfo particlesBufferInfoCurrentFrame{};
 			particlesBufferInfoCurrentFrame.buffer = particlesBuffers[i];
 			particlesBufferInfoCurrentFrame.offset = 0;
-			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * PARTICLE_COUNT;
+			particlesBufferInfoCurrentFrame.range = sizeof(Particles) * MAX_PARTICLE_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = particlesDescriptorSets[i];
@@ -1668,7 +1679,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfoCurrentFrame{};
 			particlesDataBufferInfoCurrentFrame.buffer = particlesDataBuffers[i];
 			particlesDataBufferInfoCurrentFrame.offset = 0;
-			particlesDataBufferInfoCurrentFrame.range = sizeof(unsigned int) * PARTICLE_COUNT * 4;
+			particlesDataBufferInfoCurrentFrame.range = sizeof(unsigned int) * MAX_PARTICLE_COUNT * 4;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = particlesDescriptorSets[i];
@@ -1681,7 +1692,7 @@ private:
 			VkDescriptorBufferInfo particlesDataBufferInfoNextFrame{};
 			particlesDataBufferInfoNextFrame.buffer = particlesDataBuffers[(i + 1) % MAX_FRAMES_IN_FLIGHT];
 			particlesDataBufferInfoNextFrame.offset = 0;
-			particlesDataBufferInfoNextFrame.range = sizeof(unsigned int) * PARTICLE_COUNT * 4;
+			particlesDataBufferInfoNextFrame.range = sizeof(unsigned int) * MAX_PARTICLE_COUNT * 4;
 
 			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[3].dstSet = particlesDescriptorSets[i];
@@ -1755,7 +1766,7 @@ private:
 
 	void initPlayer() {
 #if CASE == 0
-		player.set(glm::vec3(129.266, -50.0903, 101.138), glm::vec3(-0.731315, 0.328666, -0.597627), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+		player.set(glm::vec3(128.677, -215.75, 64.9492), glm::vec3(-0.394279, 0.893956, -0.213041), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 1
 		player.set(glm::vec3(282.141f, -138.19f, 162.473f), glm::vec3(-0.674087f, 0.519118f, -0.525474f), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 2
@@ -1882,24 +1893,11 @@ private:
 
 		VkDeviceSize bufferSize1 = sizeof(unsigned int) * particlesInUse * 4;
 
-		/*std::cout << frame << std::endl;
-		for (int i = 3400; i <= 3400; i++)
-			std::cout << sortedArray[i * 4] << ", " << sortedArray[i * 4 + 1] << ", " << sortedArray[i * 4 + 2] << ", " << sortedArray[i * 4 + 3] << ", " << std::endl;
-		std::cout << "\n\n";*/
-
 		memcpy( sortedArray, particlesDataBuffersMapped[currentFrame], bufferSize1);
 
 
 		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
 
-		std::cout << frame << std::endl;
-		/*for (int i = 3000; i <= 3010; i++)
-			std::cout << sortedArray[i * 4] << ", " << sortedArray[i * 4 + 1] << ", " << sortedArray[i * 4 + 2] << ", " << sortedArray[i * 4 + 3] << ", " << std::endl;*/
-		float a = 1;
-		for (int i = 0; i < particlesInUse; i++)
-			a = std::hash<float>{}(a * sortedArray[i * 4+3]);
-		std::cout << a;
-		std::cout << "\n\n";
 
 		memcpy(particlesDataBuffersMapped[currentFrame], sortedArray, bufferSize1);
 	}

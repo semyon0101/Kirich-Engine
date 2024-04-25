@@ -41,7 +41,7 @@
 #define PARTICLE_DIVISION 8 // rmin * 4
 
 
-#define CASE 2
+#define CASE 1
 
 #if CASE == 0
 #define PARTICLE_PARAMETR_COUNT 2

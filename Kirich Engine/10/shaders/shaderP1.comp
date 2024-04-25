@@ -147,7 +147,7 @@ void main()
     //F -= (currentParticle.position - currentParticle.lposition)*currentParticleType.m/10000;
     
 
-    //a = F / currentParticleType.m;
+    a = F / currentParticleType.m;
     
 
 

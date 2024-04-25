@@ -24,7 +24,7 @@ struct Particle {
     int type;
 };
 
-layout(std430, set = 1, binding = 1) readonly buffer ParticleSSB {
+layout(std430, set = 1, binding = 0) readonly buffer ParticleSSB {
     Particle particles[ ];
 };
 
