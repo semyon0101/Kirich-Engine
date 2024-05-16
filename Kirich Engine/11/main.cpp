@@ -31,7 +31,7 @@
 #include <random>
 #include <thread>
 
-#define SHOW_FPS 1
+#define SHOW_FPS 0
 #define STOP_EVERY_FRAME 0
 
 #define MAX_FRAMES_IN_FLIGHT 2
@@ -39,10 +39,10 @@
 #define WIDTH 800
 #define HEIGHT 800
 
-#define MAX_PARTICLE_COUNT 10000
+#define MAX_PARTICLE_COUNT 300
 
 
-#define CASE 2
+#define CASE 1
 
 #if CASE == 0
 #define PARTICLE_DIVISION 8 // rmin * 4
@@ -51,7 +51,7 @@
 #elif CASE == 1
 #define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
-#define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 4.0f, 1000} }
+#define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 1.0f, 1000} }
 #elif CASE == 2
 #define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
@@ -67,6 +67,12 @@
 const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
+#endif
+
+#ifdef NDEBUG
+#define SHADER_PATH ""
+#else
+#define SHADER_PATH "11/"
 #endif
 
 const std::vector<const char*> validationLayers = {
@@ -197,7 +203,7 @@ public:
 	float far;
 	glm::mat4 view;
 	glm::mat4 proj;
-	const float speed = 30;
+	const float speed = 80;
 	const float rotationSpeed = 0.1f;
 	const glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
@@ -235,9 +241,11 @@ public:
 			position += glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
+#ifdef _DEBUG
 		if (glfwGetKey(window, GLFW_KEY_TAB	) == GLFW_PRESS)
 			std::cout << "position: ( " << position.x << ", " << position.y << ", " << position.z << " ); direction: ( " 
 			<< direction.x << ", " << direction.y << ", " << direction.z << " );" << std::endl;
+#endif
 	}
 
 	void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -351,8 +359,9 @@ private:
 	std::vector<VkFence> computeInFlightFences;
 
 	//std::thread thread;
+	UniformBufferObjectParticleType particleParametrs[PARTICLE_PARAMETR_COUNT] = PARTICLE_PARAMETRS;
+	std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
 
-	
 	int particlesInUse = 0;
 	int sortedArray[MAX_PARTICLE_COUNT * 4] = { 0 };
 
@@ -972,9 +981,16 @@ private:
 
 
 	void createGraphicsPipeline1() {
-		auto vertShaderCode = readFile("11/shaders/vertP1.spv");
-		auto fragShaderCode = readFile("11/shaders/fragP1.spv");
+		std::string path;
 
+		path = SHADER_PATH;
+		path += "shaders/vertP1.spv";
+		auto vertShaderCode = readFile(path);
+
+		path = SHADER_PATH;
+		path += "shaders/fragP1.spv";
+		auto fragShaderCode = readFile(path);
+		
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1137,7 +1153,9 @@ private:
 
 
 	void createComputePipeline1() {
-		auto computeShaderCode = readFile("11/shaders/compP1.spv");
+		std::string path= SHADER_PATH;
+		path += "shaders/compP1.spv";
+		auto computeShaderCode = readFile(path);
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -1172,7 +1190,9 @@ private:
 
 
 	void createComputePipeline2() {
-		auto computeShaderCode = readFile("11/shaders/compP2.spv");
+		std::string path = SHADER_PATH;
+		path += "shaders/compP2.spv";
+		auto computeShaderCode = readFile(path);
 
 		VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 
@@ -1355,11 +1375,39 @@ private:
 
 	void createParticlesBuffers() {
 		std::vector<Particles> particles;
+
+		setPrtarticles(particles);
+
+		VkDeviceSize bufferSize = sizeof(Particles) * MAX_PARTICLE_COUNT;
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, particles.data(), (size_t)bufferSize);
+		vkUnmapMemory(device, stagingBufferMemory);
+
+		particlesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		particlesBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				particlesBuffers[i], particlesBuffersMemory[i]);
+			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
+		}
+
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+	}
+
+	void setPrtarticles(std::vector<Particles>& particles) {
 		particles.resize(MAX_PARTICLE_COUNT);
 
-		std::mt19937 gen(0);
 		int index = 0;
-
+		std::mt19937 gen(0);
 #if CASE == 0
 		for (int i = 0; i < 15; ++i) {
 			for (int j = 0; j < 10; ++j) {
@@ -1398,8 +1446,8 @@ private:
 		}
 #elif CASE == 1
 
-		for (int i = 0; i < 50; ++i) {
-			for (int j = 0; j < 50; ++j) {
+		for (int i = 0; i < 10; ++i) {
+			for (int j = 0; j < 10; ++j) {
 				for (int k = 0; k < 1; ++k) {
 					float rmin = 2;
 
@@ -1407,7 +1455,7 @@ private:
 					particles[index].position.x += rmin * ((j + k) % 2);
 					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
 
-					particles[index].position += glm::vec3(-50, -50, 0);
+					particles[index].position += glm::vec3(-10, -10, 0);
 
 
 					particles[index].lposition = particles[index].position;
@@ -1417,9 +1465,9 @@ private:
 			}
 		}
 
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 10; ++j) {
-				for (int k = 0; k < 10; ++k) {
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				for (int k = 0; k < 4; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1467,32 +1515,6 @@ private:
 		}
 
 		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
-
-		
-
-		VkDeviceSize bufferSize = sizeof(Particles) * MAX_PARTICLE_COUNT;
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, particles.data(), (size_t)bufferSize);
-		vkUnmapMemory(device, stagingBufferMemory);
-
-		particlesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		particlesBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				particlesBuffers[i], particlesBuffersMemory[i]);
-			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
-		}
-
-		vkDestroyBuffer(device, stagingBuffer, nullptr);
-		vkFreeMemory(device, stagingBufferMemory, nullptr);
 	}
 
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -1768,7 +1790,7 @@ private:
 #if CASE == 0
 		player.set(glm::vec3(128.677, -215.75, 64.9492), glm::vec3(-0.394279, 0.893956, -0.213041), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 1
-		player.set(glm::vec3(282.141f, -138.19f, 162.473f), glm::vec3(-0.674087f, 0.519118f, -0.525474f), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+		player.set(glm::vec3(198.49, -127.664, 171.758), glm::vec3(-0.671051, 0.537615, -0.510549), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 2
 		player.set(glm::vec3(282.141f, -138.19f, 162.473f), glm::vec3(-0.674087f, 0.519118f, -0.525474f), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #else 
@@ -1785,6 +1807,13 @@ private:
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			player.keyUpdate(window, (std::chrono::duration_cast<std::chrono::microseconds>(deltaTime) / 1000000.0f).count());
+			if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+				resetSim();
+			if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+				changePow(1.4);
+			if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+				changePow(1/1.4);
+
 			drawFrame();
 
 #if STOP_EVERY_FRAME == 1
@@ -1804,6 +1833,53 @@ private:
 		}
 		//thread.join();
 		vkDeviceWaitIdle(device);
+	}
+
+	void resetSim() {
+		std::vector<Particles> particles;
+
+		setPrtarticles(particles);
+
+		VkDeviceSize bufferSize = sizeof(Particles) * MAX_PARTICLE_COUNT;
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, particles.data(), (size_t)bufferSize);
+		vkUnmapMemory(device, stagingBufferMemory);
+
+		particlesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		particlesBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			copyBuffer(stagingBuffer, particlesBuffers[i], bufferSize);
+		}
+
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+
+		bufferSize = sizeof(unsigned int) * MAX_PARTICLE_COUNT * 4;
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			memcpy(particlesDataBuffersMapped[i], sortedArray, bufferSize);
+		}
+	}
+
+	void changePow(float delt) {
+		auto deltaTime = std::chrono::steady_clock::now() - lastTime;
+		if (((std::chrono::duration_cast<std::chrono::microseconds>(deltaTime)).count() / 1000000.0f) >0.7) {
+			lastTime = std::chrono::steady_clock::now();
+			particleParametrs[1].e *= delt;
+			particleParametrs[1].e = std::min(std::max(particleParametrs[1].e, 0.0f), 10.0f);
+			UniformBufferObject ubo{};
+			for(int i = 0; i < PARTICLE_PARAMETR_COUNT; i++ )
+				ubo.particleParametrs[i] = particleParametrs[i];
+			std::cout << "E - " << ubo.particleParametrs[1].e << std::endl;
+			memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+		}
 	}
 
 	void drawFrame() {
@@ -1887,6 +1963,8 @@ private:
 		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * 0, glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = player.view;
 		ubo.proj = player.proj;
+		for (int i = 0; i < PARTICLE_PARAMETR_COUNT; i++)
+			ubo.particleParametrs[i] = particleParametrs[i];
 
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
