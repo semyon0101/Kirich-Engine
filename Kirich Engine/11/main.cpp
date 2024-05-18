@@ -39,10 +39,10 @@
 #define WIDTH 800
 #define HEIGHT 800
 
-#define MAX_PARTICLE_COUNT 300
+#define MAX_PARTICLE_COUNT 10000
 
 
-#define CASE 1
+#define CASE 2
 
 #if CASE == 0
 #define PARTICLE_DIVISION 8 // rmin * 4
@@ -242,8 +242,8 @@ public:
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 			position -= glm::normalize(glm::cross(direction, glm::cross(up, direction))) * speed * deltaTime; updateViewMatrix();
 #ifdef _DEBUG
-		if (glfwGetKey(window, GLFW_KEY_TAB	) == GLFW_PRESS)
-			std::cout << "position: ( " << position.x << ", " << position.y << ", " << position.z << " ); direction: ( " 
+		if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+			std::cout << "position: ( " << position.x << ", " << position.y << ", " << position.z << " ); direction: ( "
 			<< direction.x << ", " << direction.y << ", " << direction.z << " );" << std::endl;
 #endif
 	}
@@ -265,9 +265,9 @@ private:
 		direction = glm::vec3(rotationMat * glm::vec4(direction, 1.0));
 		direction = glm::normalize(direction);
 		if (abs(direction.z) > 0.97f) {
-			direction.z = 0.97f * abs(direction.z) / direction.z; 
+			direction.z = 0.97f * abs(direction.z) / direction.z;
 			float k = direction.x / direction.y;
-			direction.y =std::sqrt( (1 - direction.z * direction.z)/(k * k + 1)) * abs(direction.y) / direction.y;
+			direction.y = std::sqrt((1 - direction.z * direction.z) / (k * k + 1)) * abs(direction.y) / direction.y;
 			direction.x = std::sqrt(1 - direction.z * direction.z - direction.y * direction.y) * abs(direction.x) / direction.x;
 
 			//direction = glm::normalize(direction);
@@ -990,7 +990,7 @@ private:
 		path = SHADER_PATH;
 		path += "shaders/fragP1.spv";
 		auto fragShaderCode = readFile(path);
-		
+
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1153,7 +1153,7 @@ private:
 
 
 	void createComputePipeline1() {
-		std::string path= SHADER_PATH;
+		std::string path = SHADER_PATH;
 		path += "shaders/compP1.spv";
 		auto computeShaderCode = readFile(path);
 
@@ -1446,8 +1446,8 @@ private:
 		}
 #elif CASE == 1
 
-		for (int i = 0; i < 10; ++i) {
-			for (int j = 0; j < 10; ++j) {
+		for (int i = 0; i < 35; ++i) {
+			for (int j = 0; j < 35; ++j) {
 				for (int k = 0; k < 1; ++k) {
 					float rmin = 2;
 
@@ -1455,7 +1455,7 @@ private:
 					particles[index].position.x += rmin * ((j + k) % 2);
 					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
 
-					particles[index].position += glm::vec3(-10, -10, 0);
+					particles[index].position += glm::vec3(-48, -48, 0);
 
 
 					particles[index].lposition = particles[index].position;
@@ -1465,9 +1465,9 @@ private:
 			}
 		}
 
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				for (int k = 0; k < 4; ++k) {
+		for (int i = 0; i < 8; ++i) {
+			for (int j = 0; j < 8; ++j) {
+				for (int k = 0; k < 8; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1812,7 +1812,7 @@ private:
 			if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
 				changePow(1.4);
 			if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-				changePow(1/1.4);
+				changePow(1 / 1.4);
 
 			drawFrame();
 
@@ -1870,12 +1870,12 @@ private:
 
 	void changePow(float delt) {
 		auto deltaTime = std::chrono::steady_clock::now() - lastTime;
-		if (((std::chrono::duration_cast<std::chrono::microseconds>(deltaTime)).count() / 1000000.0f) >0.7) {
+		if (((std::chrono::duration_cast<std::chrono::microseconds>(deltaTime)).count() / 1000000.0f) > 0.7) {
 			lastTime = std::chrono::steady_clock::now();
 			particleParametrs[1].e *= delt;
 			particleParametrs[1].e = std::min(std::max(particleParametrs[1].e, 0.0f), 10.0f);
 			UniformBufferObject ubo{};
-			for(int i = 0; i < PARTICLE_PARAMETR_COUNT; i++ )
+			for (int i = 0; i < PARTICLE_PARAMETR_COUNT; i++)
 				ubo.particleParametrs[i] = particleParametrs[i];
 			std::cout << "E - " << ubo.particleParametrs[1].e << std::endl;
 			memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
@@ -1883,6 +1883,7 @@ private:
 	}
 
 	void drawFrame() {
+
 		vkWaitForFences(device, 1, &computeInFlightFences[(currentFrame - 1) % MAX_FRAMES_IN_FLIGHT], VK_TRUE, UINT64_MAX);
 
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -1902,56 +1903,58 @@ private:
 			throw std::runtime_error("failed to submit compute command buffer!");
 
 
+		if (frame % 1 == 0) {
 
-		vkWaitForFences(device, 1, &graphicsInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &graphicsInFlightFences[currentFrame]);
+			vkWaitForFences(device, 1, &graphicsInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+			vkResetFences(device, 1, &graphicsInFlightFences[currentFrame]);
 
-		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-			throw std::runtime_error("failed to acquire swap chain image!");
+			uint32_t imageIndex;
+			VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 
-
-		vkResetCommandBuffer(graphicsCommandBuffers[currentFrame], 0);
-		recordGraphicsCommandBuffer(graphicsCommandBuffers[currentFrame], imageIndex);
-
-		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-		VkSubmitInfo submitInfoGraph{};
-		submitInfoGraph.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfoGraph.waitSemaphoreCount = 1;
-		submitInfoGraph.pWaitSemaphores = waitSemaphores;
-		submitInfoGraph.pWaitDstStageMask = waitStages;
-		submitInfoGraph.commandBufferCount = 1;
-		submitInfoGraph.pCommandBuffers = &graphicsCommandBuffers[currentFrame];
-		submitInfoGraph.signalSemaphoreCount = 1;
-		submitInfoGraph.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
-
-		if (vkQueueSubmit(graphicsQueue, 1, &submitInfoGraph, graphicsInFlightFences[currentFrame]) != VK_SUCCESS)
-			throw std::runtime_error("failed to submit draw command buffer!");
+			if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+				throw std::runtime_error("failed to acquire swap chain image!");
 
 
 
-		VkSwapchainKHR swapChains[] = { swapChain };
+			vkResetCommandBuffer(graphicsCommandBuffers[currentFrame], 0);
+			recordGraphicsCommandBuffer(graphicsCommandBuffers[currentFrame], imageIndex);
 
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageIndex;
+			VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+			VkSubmitInfo submitInfoGraph{};
+			submitInfoGraph.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfoGraph.waitSemaphoreCount = 1;
+			submitInfoGraph.pWaitSemaphores = waitSemaphores;
+			submitInfoGraph.pWaitDstStageMask = waitStages;
+			submitInfoGraph.commandBufferCount = 1;
+			submitInfoGraph.pCommandBuffers = &graphicsCommandBuffers[currentFrame];
+			submitInfoGraph.signalSemaphoreCount = 1;
+			submitInfoGraph.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
+
+			if (vkQueueSubmit(graphicsQueue, 1, &submitInfoGraph, graphicsInFlightFences[currentFrame]) != VK_SUCCESS)
+				throw std::runtime_error("failed to submit draw command buffer!");
 
 
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("failed to present swap chain image!");
 
+			VkSwapchainKHR swapChains[] = { swapChain };
+
+			VkPresentInfoKHR presentInfo{};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			presentInfo.waitSemaphoreCount = 1;
+			presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
+			presentInfo.swapchainCount = 1;
+			presentInfo.pSwapchains = swapChains;
+			presentInfo.pImageIndices = &imageIndex;
+
+			result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+
+			if (result != VK_SUCCESS)
+				throw std::runtime_error("failed to present swap chain image!");
+
+		}
 
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -1971,7 +1974,7 @@ private:
 
 		VkDeviceSize bufferSize1 = sizeof(unsigned int) * particlesInUse * 4;
 
-		memcpy( sortedArray, particlesDataBuffersMapped[currentFrame], bufferSize1);
+		memcpy(sortedArray, particlesDataBuffersMapped[currentFrame], bufferSize1);
 
 
 		std::qsort(sortedArray, particlesInUse, sizeof(unsigned int) * 4, Compar);
@@ -1992,7 +1995,7 @@ private:
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
 		vkCmdDispatch(commandBuffer, particlesInUse, 1, 1);
-		
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
 		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout2, 0, 2, dSetsP2.data(), 0, nullptr);
