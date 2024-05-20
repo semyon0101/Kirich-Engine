@@ -31,18 +31,18 @@
 #include <random>
 #include <thread>
 
-#define SHOW_FPS 0
+#define SHOW_FPS 1
 #define STOP_EVERY_FRAME 0
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
-#define WIDTH 800
-#define HEIGHT 800
+#define WIDTH 1600
+#define HEIGHT 900
 
 #define MAX_PARTICLE_COUNT 10000
 
 
-#define CASE 2
+#define CASE 1
 
 #if CASE == 0
 #define PARTICLE_DIVISION 8 // rmin * 4
@@ -51,7 +51,7 @@
 #elif CASE == 1
 #define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
-#define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 1.0f, 1000} }
+#define PARTICLE_PARAMETRS { {2, 1, 0}, {2, 6.5f, 1000} }
 #elif CASE == 2
 #define PARTICLE_DIVISION 8 
 #define PARTICLE_PARAMETR_COUNT 2
@@ -1446,8 +1446,8 @@ private:
 		}
 #elif CASE == 1
 
-		for (int i = 0; i < 35; ++i) {
-			for (int j = 0; j < 35; ++j) {
+		for (int i = 0; i < 50; ++i) {
+			for (int j = 0; j < 50; ++j) {
 				for (int k = 0; k < 1; ++k) {
 					float rmin = 2;
 
@@ -1455,7 +1455,7 @@ private:
 					particles[index].position.x += rmin * ((j + k) % 2);
 					particles[index].position.y += rmin * std::powf(3, 0.5f) / 3 * (k % 2);
 
-					particles[index].position += glm::vec3(-48, -48, 0);
+					particles[index].position += glm::vec3(-60, -60, 0);
 
 
 					particles[index].lposition = particles[index].position;
@@ -1465,9 +1465,9 @@ private:
 			}
 		}
 
-		for (int i = 0; i < 8; ++i) {
-			for (int j = 0; j < 8; ++j) {
-				for (int k = 0; k < 8; ++k) {
+		for (int i = 0; i < 18; ++i) {
+			for (int j = 0; j < 18; ++j) {
+				for (int k = 0; k < 18; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1790,7 +1790,7 @@ private:
 #if CASE == 0
 		player.set(glm::vec3(128.677, -215.75, 64.9492), glm::vec3(-0.394279, 0.893956, -0.213041), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 1
-		player.set(glm::vec3(198.49, -127.664, 171.758), glm::vec3(-0.671051, 0.537615, -0.510549), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
+		player.set(glm::vec3(228.651, -188.756, 157.563), glm::vec3(-0.620282, 0.686483, -0.379462), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #elif CASE == 2
 		player.set(glm::vec3(282.141f, -138.19f, 162.473f), glm::vec3(-0.674087f, 0.519118f, -0.525474f), 45, swapChainExtent.width / (float)swapChainExtent.height, 10, 1000);
 #else 
@@ -1902,7 +1902,6 @@ private:
 		if (vkQueueSubmit(computeQueue, 1, &submitInfoComp, computeInFlightFences[currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit compute command buffer!");
 
-
 		if (frame % 1 == 0) {
 
 			vkWaitForFences(device, 1, &graphicsInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -1963,14 +1962,13 @@ private:
 	void updateBuffers() {
 		UniformBufferObject ubo{};
 		ubo.particleCount = particlesInUse;
-		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.03f) * 0, glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::mat4(1.0f);
 		ubo.view = player.view;
 		ubo.proj = player.proj;
 		for (int i = 0; i < PARTICLE_PARAMETR_COUNT; i++)
 			ubo.particleParametrs[i] = particleParametrs[i];
 
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
-
 
 		VkDeviceSize bufferSize1 = sizeof(unsigned int) * particlesInUse * 4;
 
