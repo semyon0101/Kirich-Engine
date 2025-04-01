@@ -31,7 +31,7 @@
 #include <random>
 #include <thread>
 
-#define SHOW_FPS 0
+#define SHOW_FPS 1
 #define STOP_EVERY_FRAME 0
 
 #define MAX_FRAMES_IN_FLIGHT 2
@@ -39,7 +39,7 @@
 #define WIDTH 800
 #define HEIGHT 800
 
-#define MAX_PARTICLE_COUNT 10000
+#define MAX_PARTICLE_COUNT 30*30*30
 
 
 #define CASE 2
@@ -280,6 +280,7 @@ private:
 class App {
 public:
 	void run() {
+		std::cout << '123' << std::endl;
 		initWindow();
 		initVulkan();
 		initPlayer();
@@ -1486,9 +1487,9 @@ private:
 #elif CASE == 2
 		std::uniform_real_distribution<> dist(-1, 1);
 		// 20 20 20
-		for (int i = 0; i < 20; ++i) {
-			for (int j = 0; j < 20; ++j) {
-				for (int k = 0; k < 25; ++k) {
+		for (int i = 0; i < 30; ++i) {
+			for (int j = 0; j < 30; ++j) {
+				for (int k = 0; k < 30; ++k) {
 					float rmin = 2;
 
 					particles[index].position = glm::vec3(i * rmin * 2, j * rmin * std::powf(3, 0.5f), k * rmin * 2 * std::powf(6, 0.5f) / 3);
@@ -1570,7 +1571,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 				particlesDataBuffers[i], particlesDataBuffersMemory[i]);
 			vkMapMemory(device, particlesDataBuffersMemory[i], 0, bufferSize, 0, &particlesDataBuffersMapped[i]);
 			memcpy(particlesDataBuffersMapped[i], sortedArray, bufferSize);
@@ -1889,7 +1890,10 @@ private:
 		vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 		vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 
+
+		//auto time = std::chrono::steady_clock::now();
 		updateBuffers();
+		//std::cout << std::chrono::duration_cast<std::chrono::microseconds>((std::chrono::steady_clock::now() - time)).count() / 1000000.f << std::endl;
 
 		vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
 		recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
@@ -1901,6 +1905,7 @@ private:
 
 		if (vkQueueSubmit(computeQueue, 1, &submitInfoComp, computeInFlightFences[currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit compute command buffer!");
+
 
 
 		if (frame % 1 == 0) {
@@ -1958,6 +1963,7 @@ private:
 
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 	}
 
 	void updateBuffers() {
@@ -1968,10 +1974,9 @@ private:
 		ubo.proj = player.proj;
 		for (int i = 0; i < PARTICLE_PARAMETR_COUNT; i++)
 			ubo.particleParametrs[i] = particleParametrs[i];
-
+		
 		memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
-
-
+		
 		VkDeviceSize bufferSize1 = sizeof(unsigned int) * particlesInUse * 4;
 
 		memcpy(sortedArray, particlesDataBuffersMapped[currentFrame], bufferSize1);
@@ -1994,7 +1999,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline1);
 		std::array<VkDescriptorSet, 2> dSetsP1 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout1, 0, 2, dSetsP1.data(), 0, nullptr);
-		vkCmdDispatch(commandBuffer, particlesInUse, 1, 1);
+		vkCmdDispatch(commandBuffer,  particlesInUse / (1024) + 1, 1, 1);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline2);
 		std::array<VkDescriptorSet, 2> dSetsP2 = { uniformDescriptorSets[currentFrame], particlesDescriptorSets[currentFrame] };
@@ -2007,7 +2012,7 @@ private:
 	}
 
 	void recordGraphicsCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-
+		
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -2139,7 +2144,6 @@ Player App::player = Player();
 
 
 int main() {
-
 #ifdef _DEBUG
 	system("11\\shaders\\compile.bat");
 #endif
