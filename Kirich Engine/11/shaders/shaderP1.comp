@@ -148,7 +148,7 @@ void main()
     }
 #endif
 
-    F += vec3(0,0,-0.05);
+    F += vec3(0,0,-0.1);
     //F -= (currentParticle.position - currentParticle.lposition)*currentParticleType.m/10000;
     
 
